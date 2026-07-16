@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, font: '', os: 'ios', theme: 'light', aiFab: true, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -167,12 +167,23 @@ function render() {
   $('#set-heightpx').value = st.heightPx || 768;
   $('#lbl-heightpx').style.display = st.height === 'fixed' ? '' : 'none';
   $('#set-mode').value = st.mode || 'group';
+  $('#set-os').value = st.os || 'ios';
+  $('#set-theme').value = st.theme || 'light';
+  $('#set-aifab').checked = st.aiFab !== false;
+  $('#ai-fab').style.display = st.aiFab === false ? 'none' : '';
+  const fsel = $('#set-font');
+  if (st.font && !Array.from(fsel.options).some((o) => o.value === st.font)) {
+    const o = document.createElement('option'); o.value = st.font; o.textContent = st.font.replace(/"/g, '') + '(本機)';
+    fsel.insertBefore(o, fsel.querySelector('option[value="__local"]'));
+  }
+  fsel.value = st.font || '';
   $('#grp-hw').style.display = st.frameLevel === 'phone' ? '' : 'none';
   $('#grp-sb').style.display = st.frameLevel === 'chat' ? 'none' : '';
 
   const phone = $('#phone');
-  phone.className = 'phone level-' + st.frameLevel + (st.height === 'fixed' ? ' fixedh' : '');
+  phone.className = 'phone level-' + st.frameLevel + (st.height === 'fixed' ? ' fixedh' : '') + ' os-' + (st.os || 'ios') + ' theme-' + (st.theme || 'light') + (st.mode === 'dm' ? ' mode-dm' : ' mode-group');
   const screen = $('#phone .screen');
+  screen.style.fontFamily = st.font || '';
   screen.style.height = st.height === 'fixed' ? (st.heightPx || 768) + 'px' : '';
   if (st.frameLevel === 'phone') {
     screen.style.borderRadius = st.radius + 'px';
@@ -206,6 +217,12 @@ function render() {
   $('#batt-fill').setAttribute('width', String(Math.max(1, Math.round(17 * st.battery / 100))));
   $('#batt-text').textContent = st.battery + '%';
   $('#batt-text').style.display = st.battText ? '' : 'none';
+  const bh = Math.max(0.8, 9.6 * st.battery / 100); // Android 直立電池:由下往上填
+  $('#batt-fill-a').setAttribute('height', String(bh));
+  $('#batt-fill-a').setAttribute('y', String(4.6 + 9.6 - bh));
+  $('#batt-text-a').textContent = st.battery + '%';
+  $('#batt-text-a').style.display = st.battText ? '' : 'none';
+  $('#sig-a-fill').style.clipPath = 'inset(0 ' + (4 - st.signal) * 25 + '% 0 0)'; // 楔形依格數裁切
   if ($('#draft').textContent !== (st.draft || '')) $('#draft').textContent = st.draft || '';
   $('#set-announce').checked = !!st.announceOn;
   $('#set-embplay').checked = !!st.embedAutoplay;
@@ -214,7 +231,7 @@ function render() {
 
   const dm = st.mode === 'dm';
   $('#chat-title').textContent = st.title;
-  $('#chat-members').textContent = !dm && st.members > 0 ? `(${st.members})` : '';
+  $('#chat-members').textContent = !dm && st.members > 0 ? `(${(+st.members).toLocaleString('en-US')})` : ''; // LINE 千分位
   $('#chat-members').style.display = !dm && st.members > 0 ? '' : 'none';
   chatEl.style.background = st.bg;
   chatEl.style.backgroundImage = st.bgImage ? `url(${st.bgImage})` : '';
@@ -231,13 +248,15 @@ function render() {
       node.appendChild(span);
     } else if (m.side === 'right') {
       node = el('div', 'msg me');
+      const brow = el('div', 'brow'); // 泡泡+時間同列:時間貼泡泡左下,永不換行(LINE 行為)
       if (m.read || m.time) {
         const meta = el('span', 'read'); meta.contentEditable = true; meta.textContent = [m.read, m.time].filter(Boolean).join('\n');
         meta.style.display = 'inline-block'; meta.style.whiteSpace = 'pre'; meta.style.textAlign = 'right';
         meta.addEventListener('input', () => { const t = meta.innerText.split('\n'); m.read = t.length > 1 ? t[0] : ''; m.time = t[t.length - 1]; save(); });
-        node.appendChild(meta); node.appendChild(document.createTextNode(' '));
+        brow.appendChild(meta);
       }
-      node.appendChild(content(m, i));
+      brow.appendChild(content(m, i));
+      node.appendChild(brow);
       const rr = reactsRow(m, i); if (rr) node.appendChild(rr);
     } else {
       const prev = state.messages[i - 1];
@@ -257,10 +276,12 @@ function render() {
         who.addEventListener('input', () => { p.name = who.textContent; save(); });
         body.appendChild(who);
       }
-      body.appendChild(content(m, i));
+      const brow = el('div', 'brow'); // 泡泡+時間同列
+      brow.appendChild(content(m, i));
       const time = el('span', 'time'); time.contentEditable = true; time.textContent = m.time || '';
       time.addEventListener('input', () => { m.time = time.textContent; save(); });
-      body.appendChild(time);
+      brow.appendChild(time);
+      body.appendChild(brow);
       const rr = reactsRow(m, i); if (rr) body.appendChild(rr);
       node.appendChild(body);
     }
@@ -342,11 +363,16 @@ function bubble(m) {
   const p = el('div', 'bubble');
   if (m.quote) {
     const q = el('div', 'q');
+    const qp = state.people.find((x) => x.name === m.quote.name); // 名字對得上人物就帶他的頭像
+    const qa = document.createElement('img'); qa.className = 'qav'; qa.alt = '';
+    if (qp && qp.avatar) qa.src = qp.avatar;
+    q.appendChild(qa);
+    const qtxt = el('span', 'qtxt');
     const nm = el('strong'); const nmt = el('span'); nmt.contentEditable = true; nmt.textContent = m.quote.name;
     nmt.addEventListener('input', () => { m.quote.name = nmt.textContent; save(); }); nm.appendChild(nmt);
     const qt = el('span'); qt.contentEditable = true; qt.textContent = m.quote.text;
     qt.addEventListener('input', () => { m.quote.text = qt.textContent; save(); });
-    q.appendChild(nm); q.appendChild(qt); p.appendChild(q);
+    qtxt.appendChild(nm); qtxt.appendChild(qt); q.appendChild(qtxt); p.appendChild(q);
   }
   const txt = el('div', 'btxt'); const ts = el('span'); ts.contentEditable = true; ts.textContent = m.text;
   ts.addEventListener('input', () => { m.text = ts.textContent; save(); }); txt.appendChild(ts);
@@ -402,7 +428,32 @@ $('#set-watermark').addEventListener('change', (e) => { state.settings.watermark
 $('#set-clock').addEventListener('input', (e) => { state.settings.clock = e.target.value; save(); render(); });
 $('#set-height').addEventListener('change', (e) => { state.settings.height = e.target.value; save(); render(); });
 $('#set-mode').addEventListener('change', (e) => { state.settings.mode = e.target.value; save(); render(); });
+$('#set-os').addEventListener('change', (e) => {
+  state.settings.os = e.target.value; // 換系統順手帶合理鏡頭預設(仍可再改):Android=挖孔、iOS=動態島
+  if (e.target.value === 'android' && (state.settings.notch === 'island' || state.settings.notch === 'notch')) state.settings.notch = 'punch';
+  else if (e.target.value === 'ios' && state.settings.notch === 'punch') state.settings.notch = 'island';
+  save(); render();
+});
+$('#set-theme').addEventListener('change', (e) => { state.settings.theme = e.target.value; save(); render(); });
+$('#set-aifab').addEventListener('change', (e) => { state.settings.aiFab = e.target.checked; save(); render(); });
 $('#set-heightpx').addEventListener('input', (e) => { state.settings.heightPx = Math.max(300, +e.target.value || 768); save(); render(); });
+$('#set-font').addEventListener('change', async (e) => {
+  const v = e.target.value;
+  if (v === '__local') { // 讀本機字體清單(Chromium 限定),讀完回填 optgroup 再讓使用者挑
+    e.target.value = state.settings.font || '';
+    if (!('queryLocalFonts' in window)) { alert('此瀏覽器不支援讀取本機字體(需要 Chrome / Edge)。'); return; }
+    try {
+      const fams = Array.from(new Set((await window.queryLocalFonts()).map((f) => f.family)));
+      let og = e.target.querySelector('optgroup');
+      if (!og) { og = document.createElement('optgroup'); og.label = '本機字體'; e.target.appendChild(og); }
+      og.innerHTML = '';
+      fams.forEach((f) => { const o = document.createElement('option'); o.value = `"${f}"`; o.textContent = f; og.appendChild(o); });
+      toast('本機字體已載入(' + fams.length + ' 款),再從選單挑一次');
+    } catch (err) { console.warn('本機字體讀取失敗', err); }
+    return;
+  }
+  state.settings.font = v; save(); render();
+});
 
 // ── 新增 ──
 function addLeft() {
@@ -681,7 +732,7 @@ $('#chat-addbar').addEventListener('click', (e) => {
   if (kind === 'left') addLeft();
   else if (kind === 'right') state.messages.push({ type: 'msg', side: 'right', text: '點我改文字', time: '下午4:00', read: '', quote: null });
   else if (kind === 'skip') state.messages.push({ type: 'skip', text: '⋯⋯(略)⋯⋯' });
-  else if (kind === 'date') state.messages.push({ type: 'date', text: '7月15日 (三)' });
+  else if (kind === 'date') state.messages.push({ type: 'date', text: state.settings.os === 'android' ? '7月15日 週三' : '7月15日 (三)' });
   else if (kind === 'image' || kind === 'sticker') state.messages.push({ type: 'msg', kind, side: 'left', personId: lastLeftPid(), img: null, time: '下午4:00', read: '' });
   else if (kind === 'voice') state.messages.push({ type: 'msg', kind: 'voice', side: 'left', personId: lastLeftPid(), dur: '0:12', time: '下午4:00', read: '' });
   else if (kind === 'file') state.messages.push({ type: 'msg', kind: 'file', side: 'left', personId: lastLeftPid(), fname: '報告.pdf', fsize: '2.4 MB', time: '下午4:00', read: '' });
