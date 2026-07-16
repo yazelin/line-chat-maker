@@ -431,6 +431,7 @@ $('#set-clock').addEventListener('input', (e) => { state.settings.clock = e.targ
 $('#set-height').addEventListener('change', (e) => { state.settings.height = e.target.value; save(); render(); });
 $('#set-mode').addEventListener('change', (e) => { state.settings.mode = e.target.value; save(); render(); });
 $('#set-syscolor').addEventListener('input', (e) => { state.settings.sysColor = e.target.value; save(); render(); });
+$('#syscolor-reset').addEventListener('click', () => { state.settings.sysColor = state.settings.theme === 'dark' ? '#0f1216' : '#2d3b4e'; save(); render(); });
 $('#set-theme').addEventListener('change', (e) => {
   state.settings.theme = e.target.value; // 切佈景順手帶合理系統色(仍可再改)
   state.settings.sysColor = e.target.value === 'dark' ? '#0f1216' : '#2d3b4e';

@@ -205,7 +205,8 @@ body.previewing .radd { display: none !important; }
 
 /* LINE AI 懸浮鈕(畫面的一部分,匯出/嵌入包含) */
 .phone .screen { position: relative; }
-.phone .ai-fab { position: absolute; right: 12px; bottom: 66px; width: 46px; height: 46px; border-radius: 50%; background: rgba(45, 59, 78, 0.82); border: 1.6px solid rgba(255, 255, 255, 0.92); color: #fff; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; z-index: 4; letter-spacing: 0.03em; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
+.phone .ai-fab { position: absolute; right: 12px; bottom: 66px; width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(140deg, #1fdd70 0%, #06c755 55%, #05a447 100%); color: #fff; font-weight: 800; font-size: 15.5px; display: flex; align-items: center; justify-content: center; z-index: 4; letter-spacing: 0.02em; box-shadow: 0 3px 10px rgba(5, 150, 65, 0.4), 0 1px 3px rgba(0, 0, 0, 0.18); overflow: hidden; }
+.phone .ai-fab::after { content: ''; position: absolute; left: 12%; top: 7%; width: 76%; height: 40%; border-radius: 50%; background: linear-gradient(rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0)); pointer-events: none; }
 
 /* ── 系統列(單一套手繪 icon,顏色由「系統顏色」設定,JS 以亮度自動配黑/白前景) ── */
 .phone .sicons-android { display: inline-flex; align-items: center; gap: 4.5px; }
