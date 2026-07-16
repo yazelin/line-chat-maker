@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, height: 'auto', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, height: 'auto', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -53,6 +53,7 @@ function render() {
   $('#set-notch').value = st.notch;
   $('#set-radius').value = st.radius; $('#radius-val').textContent = st.radius;
   $('#set-buttons').checked = !!st.buttons;
+  $('#set-homebar').checked = !!st.homebar;
   $('#set-watermark').checked = !!st.watermark;
   $('#set-clock').value = st.clock;
   $('#set-signal').value = st.signal; $('#signal-val').textContent = st.signal + '/4';
@@ -83,7 +84,18 @@ function render() {
   $('#notch').className = 'notch ' + st.notch;
   const sbPad = st.frameLevel === 'phone' ? Math.max(20, Math.round(st.radius * 0.62)) : 14;
   $('#phone .statusbar').style.padding = `0.35rem ${sbPad}px 0.1rem`;
+  // 瀏海/動態島寬度動態夾住:不得壓到左時鐘或右圖示叢(實測寬度,含電量數字開關等變因)
+  if (st.frameLevel === 'phone' && (st.notch === 'notch' || st.notch === 'island')) {
+    const scrW = $('#phone .screen').offsetWidth;
+    const side = Math.max($('#clock').offsetWidth, $('#phone .sicons').offsetWidth);
+    const maxW = scrW - 2 * (sbPad + side + 6);
+    const base = st.notch === 'notch' ? 132 : 78;
+    $('#notch').style.width = Math.max(56, Math.min(base, maxW)) + 'px';
+  } else {
+    $('#notch').style.width = '';
+  }
   document.querySelectorAll('.sbtn').forEach((n) => { n.style.display = st.frameLevel === 'phone' && st.buttons ? '' : 'none'; });
+  $('#phone .homebar').style.display = st.frameLevel !== 'chat' && st.homebar ? '' : 'none';
 
   // 狀態列
   $('#clock').textContent = st.clock || '16:08';
@@ -239,6 +251,7 @@ $('#set-frame-level').addEventListener('change', (e) => { state.settings.frameLe
 $('#set-notch').addEventListener('change', (e) => { state.settings.notch = e.target.value; save(); render(); });
 $('#set-radius').addEventListener('input', (e) => { state.settings.radius = +e.target.value; save(); render(); });
 $('#set-buttons').addEventListener('change', (e) => { state.settings.buttons = e.target.checked; save(); render(); });
+$('#set-homebar').addEventListener('change', (e) => { state.settings.homebar = e.target.checked; save(); render(); });
 $('#set-signal').addEventListener('input', (e) => { state.settings.signal = +e.target.value; save(); render(); });
 $('#set-wifi').addEventListener('change', (e) => { state.settings.wifi = e.target.checked; save(); render(); });
 $('#set-battery').addEventListener('input', (e) => { state.settings.battery = +e.target.value; save(); render(); });
