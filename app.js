@@ -22,6 +22,7 @@ let currentName = '';    // 目前草稿名稱
 let avatarTarget = null; // personId 等待換頭像
 let bgTarget = false;   // 等待上傳背景圖
 let imgTarget = null;   // 等待換圖的 image 訊息 index
+let reactTarget = null; // 等待上傳表情小圖的訊息 index
 
 // ── 草稿儲存:IndexedDB(wrapper 參考 line-sticker-studio);lcm-state 降為收件匣 ──
 const IDB_NAME = 'line-chat-maker', IDB_STORE = 'drafts';
@@ -237,6 +238,7 @@ function render() {
         node.appendChild(meta); node.appendChild(document.createTextNode(' '));
       }
       node.appendChild(content(m, i));
+      const rr = reactsRow(m, i); if (rr) node.appendChild(rr);
     } else {
       const prev = state.messages[i - 1];
       const cont = prev && prev.type === 'msg' && prev.side === 'left' && prev.personId === m.personId;
@@ -259,12 +261,39 @@ function render() {
       const time = el('span', 'time'); time.contentEditable = true; time.textContent = m.time || '';
       time.addEventListener('input', () => { m.time = time.textContent; save(); });
       body.appendChild(time);
+      const rr = reactsRow(m, i); if (rr) body.appendChild(rr);
       node.appendChild(body);
     }
     node.appendChild(controls(m, i));
     chatEl.appendChild(node);
   });
   if (state.settings.height === 'fixed') chatEl.scrollTop = chatEl.scrollHeight;
+}
+
+// ── 表情回應:灰笑臉 icon(自繪,非 LINE 資產)+ emoji 或小圖;有回應才顯示整列 ──
+const RICON_SVG = '<svg class="ricon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9.2"/><circle cx="8.6" cy="10" r="1.15" fill="currentColor" stroke="none"/><circle cx="15.4" cy="10" r="1.15" fill="currentColor" stroke="none"/><path d="M8 14.2c1 1.5 2.4 2.3 4 2.3s3-.8 4-2.3" stroke-linecap="round"/></svg>';
+function reactsRow(m, i) {
+  if (!m.react || !m.react.length) return null;
+  const row = el('div', 'reacts');
+  row.innerHTML = RICON_SVG;
+  m.react.forEach((r, ri) => {
+    if (typeof r === 'string' && r.startsWith('data:')) {
+      const img = document.createElement('img'); img.className = 'remoji'; img.src = r; img.alt = ''; img.title = '點擊移除這顆';
+      img.addEventListener('click', () => { m.react.splice(ri, 1); if (!m.react.length) m.react = null; save(); render(); });
+      row.appendChild(img);
+    } else {
+      const sp = el('span', 'remoji'); sp.contentEditable = true; sp.textContent = r;
+      sp.addEventListener('input', () => { m.react[ri] = sp.textContent; save(); });
+      sp.addEventListener('blur', () => { if (!sp.textContent.trim()) { m.react.splice(ri, 1); if (!m.react.length) m.react = null; save(); render(); } });
+      row.appendChild(sp);
+    }
+  });
+  const radd = el('span', 'radd');
+  const mk = (label, title, fn) => { const b = el('button'); b.textContent = label; b.title = title; b.addEventListener('click', fn); radd.appendChild(b); };
+  mk('+表情', '加一顆 emoji(點了直接改字,清空即移除)', () => { m.react.push('😆'); save(); render(); });
+  mk('+圖', '上傳小圖當表情(例如自家貼圖角色)', () => { reactTarget = i; $('#file-avatar').click(); });
+  row.appendChild(radd);
+  return row;
 }
 
 const PLAY_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
@@ -333,6 +362,7 @@ function controls(m, i) {
   if (m.type === 'msg') {
     btn('⇄', '換邊', () => { if (m.side === 'left') { m.side = 'right'; m.read = m.read || ''; } else { m.side = 'left'; m.personId = m.personId || state.people[0].id; } save(); render(); });
     if ((m.kind || 'text') === 'text') btn('引', '加/移除引用回覆', () => { m.quote = m.quote ? null : { name: '某人', text: '被引用的訊息' }; save(); render(); });
+    btn('心', '加/移除表情回應', () => { m.react = m.react && m.react.length ? null : ['😆']; save(); render(); });
     if (m.side === 'left') {
       btn('換人', '換成下一位既有人物', () => { const idx = state.people.findIndex((p) => p.id === m.personId); m.personId = state.people[(idx + 1) % state.people.length].id; save(); render(); });
       btn('新人', '建立新人物並指給這則訊息', () => { const p = { id: 'p' + Date.now(), name: '新朋友(點我改名)', avatar: null }; state.people.push(p); m.personId = p.id; save(); render(); });
@@ -406,6 +436,13 @@ $('#file-avatar').addEventListener('change', (e) => {
       g.drawImage(img, 0, 0, c.width, c.height);
       if (m) m.img = sticker ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.85);
       imgTarget = null;
+    } else if (reactTarget !== null) {
+      const m = state.messages[reactTarget];
+      c.width = c.height = 64;
+      const s = Math.min(img.width, img.height);
+      c.getContext('2d').drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, 64, 64);
+      if (m) (m.react = m.react || []).push(c.toDataURL('image/png'));
+      reactTarget = null;
     } else if (avatarTarget) {
       c.width = c.height = 96;
       const s = Math.min(img.width, img.height);
@@ -424,7 +461,7 @@ $('#file-avatar').addEventListener('change', (e) => {
 function cleanClone() {
   const clone = $('#phone-wrap').cloneNode(true);
   const wmp = clone.querySelector('.wm-preview'); if (wmp) wmp.remove();
-  clone.querySelectorAll('.ctl, .chat-addbar').forEach((n) => n.remove());
+  clone.querySelectorAll('.ctl, .chat-addbar, .radd').forEach((n) => n.remove());
   clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'));
   return clone;
 }
@@ -461,7 +498,7 @@ async function renderCanvasFallback() {
   return html2canvas($('#phone-wrap'), {
     scale: 2, backgroundColor: null, logging: false,
     onclone: (doc) => {
-      doc.querySelectorAll('.ctl, .chat-addbar').forEach((n) => n.remove());
+      doc.querySelectorAll('.ctl, .chat-addbar, .radd').forEach((n) => n.remove());
       doc.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'));
     },
   });
