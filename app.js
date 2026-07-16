@@ -402,7 +402,8 @@ $('#export-png').addEventListener('click', async () => {
 
 // ── 匯出 HTML:可內嵌片段(scoped CSS,貼進任何頁面即用) ──
 $('#export-html').addEventListener('click', async () => {
-  const css = await (await fetch('style.css')).text();
+  const cssRaw = await (await fetch('style.css')).text();
+  const css = cssRaw.replace(/\/\*[\s\S]*?\*\//g, ''); // 剝註解,避免規則被誤判丟棄
   const keep = /^(\.phone|\.screen|\.statusbar|\.linehead|\.inputbar|\.homebar|\.notch|\.line-chat|\.announce)/;
   const scoped = css.split('}').map((chunk) => {
     const i = chunk.indexOf('{');
