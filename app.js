@@ -202,5 +202,7 @@ $('#file-json').addEventListener('change', async (e) => {
 });
 $('#reset').addEventListener('click', () => { if (confirm('清空目前對話,回到範例?')) { state = JSON.parse(JSON.stringify(DEMO)); save(); render(); } });
 
+window.addEventListener('hashchange', () => { if (location.hash.startsWith('#s=')) location.reload(); });
+
 render();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
