@@ -170,11 +170,11 @@ body.dark .panel h2 { color: #d7dade; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
 /* 表情回應 */
-.line-chat .reacts { display: flex; align-items: center; gap: 3px; margin-top: 3px; font-size: 0.82rem; line-height: 1; }
+.line-chat .reacts { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 1rem; line-height: 1; }
 .line-chat .msg.me .reacts { justify-content: flex-end; }
-.line-chat .reacts .ricon { width: 15px; height: 15px; color: #e9eef5; opacity: 0.95; flex: 0 0 auto; }
+.line-chat .reacts .ricon { width: 19px; height: 19px; color: #eef2f7; opacity: 0.95; flex: 0 0 auto; }
 .line-chat .reacts span.remoji { display: inline-block; min-width: 0.9em; outline: none; }
-.line-chat .reacts img.remoji { width: 17px; height: 17px; object-fit: contain; vertical-align: middle; cursor: pointer; }
+.line-chat .reacts img.remoji { width: 22px; height: 22px; object-fit: contain; vertical-align: middle; cursor: pointer; }
 .line-chat .reacts .radd { display: none; gap: 2px; margin-left: 4px; }
 .line-chat .msg:hover .reacts .radd { display: inline-flex; }
 .line-chat .radd button { border: 0; background: rgba(0, 0, 0, 0.35); color: #fff; border-radius: 5px; font-size: 0.62rem; padding: 0.08rem 0.3rem; cursor: pointer; }
@@ -201,29 +201,23 @@ body.previewing .radd { display: none !important; }
 .line-chat .av { background: #cfd8e3 url('data:image/svg+xml;utf8,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"%3E%3Ccircle cx="18" cy="14" r="6.5" fill="%23ffffff" opacity="0.85"/%3E%3Cpath d="M6 32c1.7-7 7-9.5 12-9.5s10.3 2.5 12 9.5z" fill="%23ffffff" opacity="0.85"/%3E%3C/svg%3E') center/cover no-repeat; }
 
 /* 表情回應的灰笑臉:半透明深色圓底,任何桌布都看得見 */
-.line-chat .reacts .ricon { background: rgba(0, 0, 0, 0.28); border-radius: 50%; padding: 2.5px; }
+.line-chat .reacts .ricon { background: rgba(0, 0, 0, 0.3); border-radius: 50%; padding: 3px; }
 
 /* LINE AI 懸浮鈕(畫面的一部分,匯出/嵌入包含) */
 .phone .screen { position: relative; }
-.phone .ai-fab { position: absolute; right: 12px; bottom: 66px; width: 42px; height: 42px; border-radius: 50%; background: rgba(22, 24, 28, 0.55); border: 1.6px solid rgba(255, 255, 255, 0.9); color: #fff; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; z-index: 4; letter-spacing: 0.03em; }
+.phone .ai-fab { position: absolute; right: 12px; bottom: 66px; width: 46px; height: 46px; border-radius: 50%; background: rgba(45, 59, 78, 0.82); border: 1.6px solid rgba(255, 255, 255, 0.92); color: #fff; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; z-index: 4; letter-spacing: 0.03em; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); }
 
-/* ── Android 模式(依真機截圖精刻;os-ios=原本樣式不動) ── */
-.phone .sicons-android, .phone .hicons-android, .phone .inputbar .in-a { display: none; }
-.phone.os-android .sicons-ios, .phone.os-android .hicons-ios { display: none; }
-.phone.os-android .sicons-android { display: inline-flex; align-items: center; gap: 4.5px; }
-.phone.os-android .hicons-android { display: inline-flex; align-items: center; gap: 15px; }
-.phone.os-android .inputbar .in-a { display: inline-block; }
-.phone.os-android .inputbar .in-smile { margin-left: -30px; margin-right: 2px; position: relative; z-index: 1; }
-.phone.os-android .inputbar .fakein { padding-right: 34px; border-radius: 999px; }
-.phone.os-android.mode-group .h-call, .phone.os-android.mode-group .h-cal { display: none; }
-.phone.os-android.mode-dm .h-bub { display: none; }
-.phone.os-android .statusbar { font-weight: 500; font-size: 0.72rem; font-family: 'Roboto', 'Noto Sans TC', sans-serif; }
-.phone.os-android .volte { font-size: 6px; line-height: 1.05; font-weight: 700; letter-spacing: 0.02em; display: inline-block; text-align: center; }
-.phone.os-android .linehead .back { font-weight: 300; }
-.phone.os-android .linehead .htitle { font-weight: 700; }
-.phone.os-android .homebar span { width: 128px; height: 3px; }
-.phone.os-android.theme-light .statusbar, .phone.os-android.theme-light .linehead { background: #fff; color: #17181a; }
-.phone.os-android.theme-light .homebar span { background: rgba(0, 0, 0, 0.8); }
+/* ── 系統列(單一套手繪 icon,顏色由「系統顏色」設定,JS 以亮度自動配黑/白前景) ── */
+.phone .sicons-android { display: inline-flex; align-items: center; gap: 4.5px; }
+.phone .hicons-android { display: inline-flex; align-items: center; gap: 15px; }
+.phone .inputbar .in-a { display: inline-block; }
+.phone .inputbar .in-smile { margin-left: -30px; margin-right: 2px; position: relative; z-index: 1; }
+.phone .inputbar .fakein { padding-right: 34px; border-radius: 999px; }
+.phone.mode-group .h-call, .phone.mode-group .h-cal { display: none; }
+.phone.mode-dm .h-bub { display: none; }
+.phone .statusbar { font-weight: 500; }
+.phone .volte { font-size: 6px; line-height: 1.05; font-weight: 700; letter-spacing: 0.02em; display: inline-block; text-align: center; }
+.phone .linehead .htitle { font-weight: 700; }
 
 /* ── LINE 深色主題(作品本身,雙 os 通用) ── */
 .phone.theme-dark .statusbar, .phone.theme-dark .linehead { background: #0f1216; color: #fff; }
