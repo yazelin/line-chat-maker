@@ -31,7 +31,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "N
 .phone.level-phone { background: #1a1a1e; border-radius: 40px; padding: 8px; box-shadow: 0 24px 60px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08) inset; }
 .phone .notch { position: absolute; left: 50%; transform: translateX(-50%); background: #0a0a0c; z-index: 3; }
 .phone .notch.island { top: 17px; width: 78px; height: 20px; border-radius: 11px; }
-.phone .notch.notch { top: 8px; width: 158px; height: 26px; border-radius: 0 0 18px 18px; }
+.phone .notch.notch { top: 8px; width: 132px; height: 24px; border-radius: 0 0 16px 16px; }
 .phone .notch.punch { top: 15px; width: 13px; height: 13px; border-radius: 50%; }
 .phone .notch.none { display: none; }
 /* 側邊按鈕 */
@@ -40,7 +40,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "N
 .phone .sbtn.vol2 { left: -3px; top: calc(18% + 44px); height: 34px; }
 .phone .sbtn.pwr { right: -3px; top: 24%; height: 52px; }
 .statusbar { display: flex; align-items: center; justify-content: space-between; background: #2d3b4e; color: #fff; font-size: 0.7rem; font-weight: 600; padding: 0.35rem 0.9rem 0.1rem; }
-.statusbar .batt-text { font-size: 0.68rem; margin-right: 2px; }
+.statusbar .batt-text { font-size: 0.68rem; margin: 0 1px 0 3px; }
 .statusbar .sicons { display: flex; align-items: center; gap: 5px; }
 .homebar { background: #fff; padding: 0.3rem 0 0.4rem; text-align: center; }
 .homebar span { display: inline-block; width: 110px; height: 4px; border-radius: 999px; background: rgba(0,0,0,0.75); }
