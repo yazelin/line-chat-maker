@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# 讀書會', members: 143, bg: '#7d9bc1', frame: true, watermark: true, clock: '16:08' },
+  settings: { title: 'C# 讀書會', members: 143, bg: '#7d9bc1', frame: true, watermark: true, clock: '16:08', height: 'auto' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -42,8 +42,10 @@ function render() {
   $('#set-frame').checked = !!state.settings.frame;
   $('#set-watermark').checked = !!state.settings.watermark;
   $('#set-clock').value = state.settings.clock;
+  $('#set-height').value = state.settings.height || 'auto';
   // 外框
   $('#phone').classList.toggle('framed', !!state.settings.frame);
+  $('#phone').classList.toggle('fixedh', state.settings.height === 'fixed');
   $('#clock').textContent = state.settings.clock || '16:08';
   $('#chat-title').textContent = state.settings.title;
   $('#chat-members').textContent = state.settings.members > 0 ? `(${state.settings.members})` : '';
@@ -135,6 +137,7 @@ $('#set-bg').addEventListener('input', (e) => { state.settings.bg = e.target.val
 $('#set-frame').addEventListener('change', (e) => { state.settings.frame = e.target.checked; save(); render(); });
 $('#set-watermark').addEventListener('change', (e) => { state.settings.watermark = e.target.checked; save(); });
 $('#set-clock').addEventListener('input', (e) => { state.settings.clock = e.target.value; save(); render(); });
+$('#set-height').addEventListener('change', (e) => { state.settings.height = e.target.value; save(); render(); });
 
 // ── 新增 ──
 $('#add-left').addEventListener('click', () => {
@@ -187,6 +190,20 @@ $('#export-png').addEventListener('click', async () => {
   a.download = 'line-chat.png';
   a.href = canvas.toDataURL('image/png');
   a.click();
+});
+
+// ── 匯出 HTML(單檔、乾淨、含浮水印) ──
+$('#export-html').addEventListener('click', async () => {
+  const css = await (await fetch('style.css')).text();
+  const clone = $('#phone').cloneNode(true);
+  clone.querySelectorAll('.ctl').forEach((n) => n.remove());
+  clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'));
+  const wm = state.settings.watermark ? '<div style="position:fixed;right:14px;bottom:10px;font:14px sans-serif;color:rgba(0,0,0,0.45);text-shadow:0 1px 0 rgba(255,255,255,0.6)">示意圖</div>' : '';
+  const html = `<!doctype html>\n<html lang="zh-Hant-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${state.settings.title} — LINE 對話示意圖</title><style>${css}</style></head><body style="display:flex;justify-content:center;align-items:flex-start;padding:2rem;background:#faf9f7;">${clone.outerHTML}${wm}<!-- 由 LINE 對話製造機產生 https://yazelin.github.io/line-chat-maker/ 僅供創作示意 --></body></html>`;
+  const aEl = document.createElement('a');
+  aEl.download = 'line-chat.html';
+  aEl.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+  aEl.click();
 });
 
 // ── 腳本 JSON 進出 ──
