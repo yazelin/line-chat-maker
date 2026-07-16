@@ -42,14 +42,14 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "N
 .statusbar { display: flex; align-items: center; justify-content: space-between; background: #2d3b4e; color: #fff; font-size: 0.7rem; font-weight: 600; padding: 0.35rem 0.9rem 0.1rem; }
 .statusbar .batt-text { font-size: 0.68rem; margin: 0 1px 0 3px; }
 .statusbar .sicons { display: flex; align-items: center; gap: 5px; }
-.homebar { background: #fff; padding: 0.3rem 0 0.4rem; text-align: center; }
+.homebar { background: #fff; padding: 0 0 0.3rem; text-align: center; line-height: 0; }
 .homebar span { display: inline-block; width: 110px; height: 4px; border-radius: 999px; background: rgba(0,0,0,0.75); }
 .linehead { display: flex; align-items: center; gap: 0.6rem; background: #2d3b4e; color: #fff; padding: 0.35rem 0.9rem 0.55rem; font-size: 0.95rem; }
 .linehead .hicons { display: flex; align-items: center; opacity: 0.9; }
 .linehead .back { font-size: 1.3rem; line-height: 1; }
 .linehead .htitle { flex: 1; font-weight: 600; }
 .linehead .hmembers { font-weight: 400; opacity: 0.7; margin-left: 0.25rem; }
-.inputbar { display: flex; align-items: center; gap: 0.6rem; background: #fff; padding: 0.45rem 0.8rem; color: #555; }
+.inputbar { display: flex; align-items: center; gap: 0.6rem; background: #fff; padding: 0.4rem 0.8rem 0.3rem; color: #555; }
 .inputbar .plus { font-size: 1.1rem; color: #8a8a8a; }
 .inputbar .fakein { flex: 1; background: #f1f0ee; border-radius: 999px; padding: 0.2rem 0.8rem; color: #999; }
 
