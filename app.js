@@ -216,7 +216,10 @@ function controls(m, i) {
   if (m.type === 'msg') {
     btn('⇄', '換邊', () => { if (m.side === 'left') { m.side = 'right'; m.read = m.read || ''; } else { m.side = 'left'; m.personId = m.personId || state.people[0].id; } save(); render(); });
     if ((m.kind || 'text') === 'text') btn('引', '加/移除引用回覆', () => { m.quote = m.quote ? null : { name: '某人', text: '被引用的訊息' }; save(); render(); });
-    if (m.side === 'left') btn('換人', '換發話者', () => { const idx = state.people.findIndex((p) => p.id === m.personId); m.personId = state.people[(idx + 1) % state.people.length].id; save(); render(); });
+    if (m.side === 'left') {
+      btn('換人', '換成下一位既有人物', () => { const idx = state.people.findIndex((p) => p.id === m.personId); m.personId = state.people[(idx + 1) % state.people.length].id; save(); render(); });
+      btn('新人', '建立新人物並指給這則訊息', () => { const p = { id: 'p' + Date.now(), name: '新朋友(點我改名)', avatar: null }; state.people.push(p); m.personId = p.id; save(); render(); });
+    }
   }
   btn('✕', '刪除', () => { state.messages.splice(i, 1); save(); render(); });
   return c;
