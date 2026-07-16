@@ -21,7 +21,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "N
 .addbar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
 .hint { font-size: 0.75rem; color: var(--muted); }
 
-.stage { flex: 1 1 24rem; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 0.7rem; }
+.stage { flex: 1 1 24rem; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2.2rem; }
 .phone { width: 100%; max-width: 24rem; position: relative; }
 .phone .screen { overflow: hidden; display: flex; flex-direction: column; }
 /* 僅對話/螢幕擷圖:擷圖是方角、無機身 */
