@@ -6,7 +6,16 @@
 <title>LINE 對話製造機 — 免費線上做出以假亂真的對話截圖</title>
 <meta name="description" content="免費、免註冊、完全離線的 LINE 風格對話截圖產生器。所見即所得編輯、頭像上傳、引用回覆、手機外框,一鍵匯出 PNG。">
 <meta property="og:title" content="LINE 對話製造機">
-<meta property="og:description" content="免費、免註冊、完全離線。所見即所得做出 LINE 風格對話截圖,一鍵匯出 PNG。">
+<meta property="og:description" content="免費、免註冊、完全離線。所見即所得做出 LINE 風格對話截圖,一鍵匯出 PNG / HTML。僅供創作示意。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://yazelin.github.io/line-chat-maker/">
+<meta property="og:image" content="https://yazelin.github.io/line-chat-maker/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:site_name" content="LINE 對話製造機">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://yazelin.github.io/line-chat-maker/og.png">
+<link rel="canonical" href="https://yazelin.github.io/line-chat-maker/">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <meta name="theme-color" content="#06c755">
@@ -14,20 +23,22 @@
 </head>
 <body>
 <header class="topbar">
-  <h1>LINE 對話製造機</h1>
+  <h1><span class="bubble-badge">LINE</span>對話製造機</h1>
   <p class="tag">免費・免註冊・完全離線。點畫面上的字直接改,改完匯出 PNG。<strong>僅供創作示意</strong>,請勿用於詐騙或誤導。</p>
 </header>
 
 <main class="layout">
   <aside class="panel">
     <h2>聊天室設定</h2>
-    <label>聊天室名稱 <input id="set-title" type="text"></label>
+    <label>聊天類型 <select id="set-mode"><option value="group">群組</option><option value="dm">1對1</option></select></label>
+    <label>聊天室名稱(1對1=對方名字) <input id="set-title" type="text"></label>
     <label>成員數(0=不顯示) <input id="set-members" type="number" min="0"></label>
     <label>背景色 <input id="set-bg" type="color"></label>
     <label class="row"><input id="set-frame" type="checkbox"> 手機外框</label>
     <label class="row"><input id="set-watermark" type="checkbox"> 匯出加「示意圖」浮水印</label>
     <label>狀態列時間 <input id="set-clock" type="text" placeholder="16:08"></label>
-    <label>畫面高度 <select id="set-height"><option value="auto">依訊息內容</option><option value="fixed">手機固定高(1:2)</option></select></label>
+    <label>畫面高度 <select id="set-height"><option value="auto">依訊息內容</option><option value="fixed">固定高度</option></select></label>
+    <label id="lbl-heightpx">固定高度(px) <input id="set-heightpx" type="number" min="300" step="10"></label>
 
     <h2>新增內容</h2>
     <div class="addbar">
@@ -41,12 +52,12 @@
     <h2>匯出</h2>
     <div class="addbar">
       <button id="export-png" class="primary">匯出 PNG</button>
-      <button id="export-html">匯出 HTML</button>
+      <button id="export-html">嵌入</button>
       <button id="export-json">匯出腳本 JSON</button>
       <button id="import-json">匯入腳本 JSON</button>
       <button id="reset">清空重來</button>
     </div>
-    <p class="hint">腳本 JSON 讓你存檔、分享,也讓 AI 直接生成整段對話(見 repo 的 skills/)。</p>
+    <p class="hint">PNG=圖片;「嵌入」會複製一段 HTML,貼進部落格或任何網頁就能顯示。腳本 JSON 讓你存檔、分享,也讓 AI 直接生成整段對話(見 repo 的 skills/)。</p>
   </aside>
 
   <section class="stage">
@@ -63,7 +74,7 @@
         </div>
         <div class="linehead" data-frame-only>
           <span class="back">‹</span>
-          <span class="htitle"><span id="chat-title">C# 讀書會</span><span id="chat-members" class="hmembers">(143)</span></span>
+          <span class="htitle"><span id="chat-title">C# Taiwan交流聚會</span><span id="chat-members" class="hmembers">(1947)</span></span>
           <span class="hicons"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></span>
         </div>
         <div id="chat" class="line-chat"></div>

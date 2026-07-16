@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# 讀書會', members: 143, bg: '#7d9bc1', frame: true, watermark: true, clock: '16:08', height: 'auto' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', frame: true, watermark: true, clock: '16:08', height: 'auto', heightPx: 768, mode: 'group' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -43,13 +43,18 @@ function render() {
   $('#set-watermark').checked = !!state.settings.watermark;
   $('#set-clock').value = state.settings.clock;
   $('#set-height').value = state.settings.height || 'auto';
+  $('#set-mode').value = state.settings.mode || 'group';
+  $('#set-heightpx').value = state.settings.heightPx || 768;
+  $('#lbl-heightpx').style.display = state.settings.height === 'fixed' ? '' : 'none';
   // 外框
   $('#phone').classList.toggle('framed', !!state.settings.frame);
   $('#phone').classList.toggle('fixedh', state.settings.height === 'fixed');
+  $('#phone .screen').style.height = state.settings.height === 'fixed' ? (state.settings.heightPx || 768) + 'px' : '';
   $('#clock').textContent = state.settings.clock || '16:08';
   $('#chat-title').textContent = state.settings.title;
-  $('#chat-members').textContent = state.settings.members > 0 ? `(${state.settings.members})` : '';
-  $('#chat-members').style.display = state.settings.members > 0 ? '' : 'none';
+  const dm = state.settings.mode === 'dm';
+  $('#chat-members').textContent = !dm && state.settings.members > 0 ? `(${state.settings.members})` : '';
+  $('#chat-members').style.display = !dm && state.settings.members > 0 ? '' : 'none';
   chatEl.style.background = state.settings.bg;
 
   chatEl.innerHTML = '';
@@ -81,7 +86,7 @@ function render() {
         node.appendChild(av);
       }
       const body = el('div', 'mbody');
-      if (!cont) {
+      if (!cont && state.settings.mode !== 'dm') {
         const p = personOf(m);
         const who = el('span', 'who'); who.contentEditable = true; who.textContent = p.name;
         who.addEventListener('input', () => { p.name = who.textContent; save(); });
@@ -138,6 +143,8 @@ $('#set-frame').addEventListener('change', (e) => { state.settings.frame = e.tar
 $('#set-watermark').addEventListener('change', (e) => { state.settings.watermark = e.target.checked; save(); });
 $('#set-clock').addEventListener('input', (e) => { state.settings.clock = e.target.value; save(); render(); });
 $('#set-height').addEventListener('change', (e) => { state.settings.height = e.target.value; save(); render(); });
+$('#set-mode').addEventListener('change', (e) => { state.settings.mode = e.target.value; save(); render(); });
+$('#set-heightpx').addEventListener('input', (e) => { state.settings.heightPx = Math.max(300, +e.target.value || 768); save(); $('#phone .screen').style.height = state.settings.heightPx + 'px'; });
 
 // ── 新增 ──
 $('#add-left').addEventListener('click', () => {
@@ -192,18 +199,32 @@ $('#export-png').addEventListener('click', async () => {
   a.click();
 });
 
-// ── 匯出 HTML(單檔、乾淨、含浮水印) ──
+// ── 匯出 HTML:可內嵌片段(scoped CSS,貼進任何頁面即用) ──
 $('#export-html').addEventListener('click', async () => {
   const css = await (await fetch('style.css')).text();
+  const keep = /^(\.phone|\.screen|\.statusbar|\.linehead|\.inputbar|\.homebar|\.notch|\.line-chat)/;
+  const scoped = css.split('}').map((chunk) => {
+    const i = chunk.indexOf('{');
+    if (i < 0) return '';
+    const sels = chunk.slice(0, i).trim().split(',').map((s) => s.trim()).filter((s) => keep.test(s));
+    if (!sels.length) return '';
+    return sels.map((s) => '.lcm-embed ' + s).join(',') + '{' + chunk.slice(i + 1) + '}';
+  }).filter(Boolean).join('\n');
   const clone = $('#phone').cloneNode(true);
   clone.querySelectorAll('.ctl').forEach((n) => n.remove());
   clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'));
-  const wm = state.settings.watermark ? '<div style="position:fixed;right:14px;bottom:10px;font:14px sans-serif;color:rgba(0,0,0,0.45);text-shadow:0 1px 0 rgba(255,255,255,0.6)">示意圖</div>' : '';
-  const html = `<!doctype html>\n<html lang="zh-Hant-TW"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${state.settings.title} — LINE 對話示意圖</title><style>${css}</style></head><body style="display:flex;justify-content:center;align-items:flex-start;padding:2rem;background:#faf9f7;">${clone.outerHTML}${wm}<!-- 由 LINE 對話製造機產生 https://yazelin.github.io/line-chat-maker/ 僅供創作示意 --></body></html>`;
-  const aEl = document.createElement('a');
-  aEl.download = 'line-chat.html';
-  aEl.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-  aEl.click();
+  const wm = state.settings.watermark ? '<div style="text-align:right;font:12px/1.6 sans-serif;color:rgba(0,0,0,0.45)">示意圖</div>' : '';
+  const reset = '.lcm-embed *{margin:0;padding:0;border:0;box-sizing:border-box;background:none;font:inherit;color:inherit;}';
+  const html = `<!-- LINE 對話製造機產生的內嵌片段:整段貼進你的頁面即可顯示。僅供創作示意 https://yazelin.github.io/line-chat-maker/ -->\n<div class="lcm-embed" style="max-width:24rem;margin:1.5rem auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC','Microsoft JhengHei',sans-serif;line-height:1.6;">\n${clone.outerHTML}\n${wm}\n</div>\n<style>\n${reset}\n${scoped}\n</style>`;
+  try {
+    await navigator.clipboard.writeText(html);
+    alert('嵌入碼已複製!貼進部落格、CMS 或任何網頁的 HTML 區塊即可顯示。');
+  } catch (e) {
+    const aEl = document.createElement('a');
+    aEl.download = 'line-chat-embed.html';
+    aEl.href = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+    aEl.click();
+  }
 });
 
 // ── 腳本 JSON 進出 ──
