@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, height: 'auto', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, glowColor: '#96b9ff', height: 'auto', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -42,6 +42,13 @@ function save(s) { localStorage.setItem('lcm-state', JSON.stringify(s || state))
 const $ = (sel) => document.querySelector(sel);
 const chatEl = $('#chat');
 
+function glowShadow(st) {
+  if (!(st.glow > 0)) return '';
+  const hx = (st.glowColor || '#96b9ff').replace('#', '');
+  const r = parseInt(hx.slice(0, 2), 16), g = parseInt(hx.slice(2, 4), 16), b = parseInt(hx.slice(4, 6), 16);
+  return `0 0 ${st.glow}px rgba(${r},${g},${b},${Math.min(0.9, st.glow / 100)})`;
+}
+
 function personOf(m) { return state.people.find((p) => p.id === m.personId) || { id: null, name: '???', avatar: null }; }
 
 function render() {
@@ -61,6 +68,7 @@ function render() {
   $('#set-battery').value = st.battery; $('#battery-val').textContent = st.battery;
   $('#set-batttext').checked = !!st.battText;
   $('#set-glow').value = st.glow; $('#glow-val').textContent = st.glow;
+  $('#set-glowcolor').value = st.glowColor || '#96b9ff';
   $('#set-height').value = st.height || 'auto';
   $('#set-heightpx').value = st.heightPx || 768;
   $('#lbl-heightpx').style.display = st.height === 'fixed' ? '' : 'none';
@@ -75,11 +83,11 @@ function render() {
   if (st.frameLevel === 'phone') {
     screen.style.borderRadius = st.radius + 'px';
     phone.style.borderRadius = (st.radius + 8) + 'px';
-    screen.style.boxShadow = st.glow > 0 ? `0 0 ${st.glow}px rgba(150,185,255,${Math.min(0.9, st.glow / 100)})` : '';
+    screen.style.boxShadow = glowShadow(st);
   } else {
     screen.style.borderRadius = '';
     phone.style.borderRadius = '';
-    screen.style.boxShadow = st.glow > 0 ? `0 0 ${st.glow}px rgba(150,185,255,${Math.min(0.9, st.glow / 100)})` : '0 8px 30px rgba(0,0,0,0.12)';
+    screen.style.boxShadow = glowShadow(st) || '0 8px 30px rgba(0,0,0,0.12)';
   }
   $('#notch').className = 'notch ' + st.notch;
   const sbPad = st.frameLevel === 'phone' ? Math.max(20, Math.round(st.radius * 0.62)) : 14;
@@ -257,6 +265,7 @@ $('#set-wifi').addEventListener('change', (e) => { state.settings.wifi = e.targe
 $('#set-battery').addEventListener('input', (e) => { state.settings.battery = +e.target.value; save(); render(); });
 $('#set-batttext').addEventListener('change', (e) => { state.settings.battText = e.target.checked; save(); render(); });
 $('#set-glow').addEventListener('input', (e) => { state.settings.glow = +e.target.value; save(); render(); });
+$('#set-glowcolor').addEventListener('input', (e) => { state.settings.glowColor = e.target.value; save(); render(); });
 $('#draft').addEventListener('input', () => { state.settings.draft = $('#draft').textContent; save(); });
 $('#set-announce').addEventListener('change', (e) => { state.settings.announceOn = e.target.checked; save(); render(); });
 $('#set-embplay').addEventListener('change', (e) => { state.settings.embedAutoplay = e.target.checked; save(); });
