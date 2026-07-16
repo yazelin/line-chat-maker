@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, height: 'auto', heightPx: 768, mode: 'group', draft: '', announceOn: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, height: 'auto', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -92,6 +92,7 @@ function render() {
   $('#batt-text').style.display = st.battText ? '' : 'none';
   if ($('#draft').textContent !== (st.draft || '')) $('#draft').textContent = st.draft || '';
   $('#set-announce').checked = !!st.announceOn;
+  $('#set-embplay').checked = !!st.embedAutoplay;
   $('#announce').style.display = st.announceOn && st.frameLevel !== 'chat' ? '' : 'none';
   if ($('#announce-text').textContent !== (st.announce || '')) $('#announce-text').textContent = st.announce || '';
 
@@ -148,6 +149,7 @@ function render() {
     node.appendChild(controls(m, i));
     chatEl.appendChild(node);
   });
+  if (state.settings.height === 'fixed') chatEl.scrollTop = chatEl.scrollHeight;
 }
 
 const PLAY_SVG = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>';
@@ -242,6 +244,7 @@ $('#set-batttext').addEventListener('change', (e) => { state.settings.battText =
 $('#set-glow').addEventListener('input', (e) => { state.settings.glow = +e.target.value; save(); render(); });
 $('#draft').addEventListener('input', () => { state.settings.draft = $('#draft').textContent; save(); });
 $('#set-announce').addEventListener('change', (e) => { state.settings.announceOn = e.target.checked; save(); render(); });
+$('#set-embplay').addEventListener('change', (e) => { state.settings.embedAutoplay = e.target.checked; save(); });
 $('#announce-text').addEventListener('input', () => { state.settings.announce = $('#announce-text').textContent; save(); });
 $('#set-bgimg').addEventListener('click', () => { bgTarget = true; $('#file-avatar').click(); });
 $('#clear-bgimg').addEventListener('click', () => { state.settings.bgImage = null; save(); render(); });
@@ -294,19 +297,53 @@ $('#file-avatar').addEventListener('change', (e) => {
   e.target.value = '';
 });
 
-// ── 匯出 PNG(剝掉編輯痕跡+可選浮水印) ──
-$('#export-png').addEventListener('click', async () => {
+// ── 匯出 PNG:SVG foreignObject 真渲染(與預覽像素一致);失敗時 html2canvas 備援 ──
+function cleanClone() {
+  const clone = $('#phone').cloneNode(true);
+  clone.querySelectorAll('.ctl, .chat-addbar').forEach((n) => n.remove());
+  clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'));
+  return clone;
+}
+
+async function renderCanvasNative() {
   const src = $('#phone');
-  const canvas = await html2canvas(src, {
+  const w = src.offsetWidth, h = src.offsetHeight, pad = 30, scale = 2;
+  const css = await (await fetch('style.css')).text();
+  const wrapEl = document.createElement('div');
+  wrapEl.setAttribute('style', `--accent:#06c755;--fg:#1c1917;--muted:#6b6560;--border:#e5e2de;padding:${pad}px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC','Microsoft JhengHei',sans-serif;line-height:1.6;color:#1c1917;`);
+  const styleEl = document.createElement('style');
+  styleEl.textContent = css;
+  wrapEl.appendChild(styleEl);
+  wrapEl.appendChild(cleanClone());
+  const xhtml = new XMLSerializer().serializeToString(wrapEl);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${(w + pad * 2) * scale}" height="${(h + pad * 2) * scale}" viewBox="0 0 ${w + pad * 2} ${h + pad * 2}"><foreignObject width="${w + pad * 2}" height="${h + pad * 2}">${xhtml}</foreignObject></svg>`;
+  const img = new Image();
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  await img.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = (w + pad * 2) * scale; canvas.height = (h + pad * 2) * scale;
+  canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  canvas.toDataURL('image/png'); // 提早觸發 taint 檢查,污染會在這裡丟例外
+  return canvas;
+}
+
+async function renderCanvasFallback() {
+  return html2canvas($('#phone'), {
     scale: 2, backgroundColor: null, logging: false,
     onclone: (doc) => {
       doc.querySelectorAll('.ctl, .chat-addbar').forEach((n) => n.remove());
       doc.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'));
     },
   });
+}
+
+$('#export-png').addEventListener('click', async () => {
+  let canvas;
+  try { canvas = await renderCanvasNative(); }
+  catch (e) { console.warn('foreignObject 匯出失敗,改用 html2canvas', e); canvas = await renderCanvasFallback(); }
   if (state.settings.watermark) {
     const ctx = canvas.getContext('2d');
-    ctx.setTransform(1, 0, 0, 1, 0, 0); // html2canvas 會殘留 scale 變換
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     const pad = Math.round(canvas.width / 20);
     ctx.font = `${Math.round(canvas.width / 30)}px sans-serif`;
     ctx.textAlign = 'right';
@@ -332,12 +369,12 @@ $('#export-html').addEventListener('click', async () => {
     if (!sels.length) return '';
     return sels.map((s) => '.lcm-embed ' + s).join(',') + '{' + chunk.slice(i + 1) + '}';
   }).filter(Boolean).join('\n');
-  const clone = $('#phone').cloneNode(true);
-  clone.querySelectorAll('.ctl, .chat-addbar').forEach((n) => n.remove());
-  clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'));
+  const clone = cleanClone();
   const wm = state.settings.watermark ? '<div style="text-align:right;font:12px/1.6 sans-serif;color:rgba(0,0,0,0.45)">示意圖</div>' : '';
   const reset = '.lcm-embed *{margin:0;padding:0;border:0;box-sizing:border-box;background:none;font:inherit;color:inherit;}';
-  const html = `<!-- LINE 對話製造機產生的內嵌片段:整段貼進你的頁面即可顯示。僅供創作示意 https://yazelin.github.io/line-chat-maker/ -->\n<div class="lcm-embed" style="max-width:24rem;margin:1.5rem auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC','Microsoft JhengHei',sans-serif;line-height:1.6;">\n${clone.outerHTML}\n${wm}\n</div>\n<style>\n${reset}\n${scoped}\n</style>`;
+  const autoplay = !!state.settings.embedAutoplay;
+  const embJs = `<script>(function(){var s=document.currentScript,r=s.closest('.lcm-embed');s.remove();var c=r.querySelector('.line-chat');function bottom(){if(c)c.scrollTop=c.scrollHeight}bottom();${autoplay ? "var ms=[].slice.call(r.querySelectorAll('.line-chat>div'));var io=new IntersectionObserver(function(en){if(!en[0].isIntersecting)return;io.disconnect();ms.forEach(function(m){m.style.visibility='hidden'});var i=0;(function st(){if(i>=ms.length)return;var m=ms[i++];m.style.visibility='';m.style.animation='lcmIn .3s ease-out';bottom();setTimeout(st,650)})()},{threshold:0.4});io.observe(r);" : ''}})();<\/script>`;
+  const html = `<!-- LINE 對話製造機產生的內嵌片段:整段貼進你的頁面即可顯示。僅供創作示意 https://yazelin.github.io/line-chat-maker/ -->\n<div class="lcm-embed" style="max-width:24rem;margin:1.5rem auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC','Microsoft JhengHei',sans-serif;line-height:1.6;">\n${clone.outerHTML}\n${wm}\n${embJs}\n</div>\n<style>\n${reset}\n${scoped}\n@keyframes lcmIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }\n</style>`;
   try {
     await navigator.clipboard.writeText(html);
     alert('嵌入碼已複製!貼進部落格、CMS 或任何網頁的 HTML 區塊即可顯示。');
