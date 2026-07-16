@@ -428,21 +428,43 @@ $('#export-html').addEventListener('click', async () => {
   }
 });
 
-// ── 分享連結(#s= hash,打開即重現) ──
+// ── 分享連結:短網址(Cloudflare Worker KV);失敗時退回 #s= 長連結 ──
+const SHORTURL_API = 'https://shorturl.yazelinj303.workers.dev';
 document.querySelector('#share-link').addEventListener('click', async () => {
-  const toB64 = (str) => btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  const base = location.origin + location.pathname + '#s=';
-  let url = base + toB64(JSON.stringify(state));
-  if (url.length > 8000 && confirm('對話裡有圖片,連結會非常長(部分平台可能吃不下)。要改用去掉圖片的精簡版連結嗎?')) {
-    const slim = JSON.parse(JSON.stringify(state));
-    slim.people.forEach((p) => { p.avatar = null; });
-    slim.settings.bgImage = null;
-    slim.messages.forEach((m) => { if (m.img) m.img = null; });
-    url = base + toB64(JSON.stringify(slim));
+  let url;
+  try {
+    const r = await fetch(SHORTURL_API + '/api/short-url', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ app: 'line-chat-maker', state }),
+    });
+    const d = await r.json();
+    if (!d.shortUrl) throw new Error(d.error || 'no shortUrl');
+    url = d.shortUrl;
+  } catch (e) {
+    console.warn('短網址服務失敗,退回長連結', e);
+    const toB64 = (str) => btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    url = location.origin + location.pathname + '#s=' + toB64(JSON.stringify(state));
   }
-  try { await navigator.clipboard.writeText(url); alert('分享連結已複製!對方打開就是這段對話。'); }
+  try { await navigator.clipboard.writeText(url); alert('分享連結已複製!對方打開就是這段對話(連結保存一年)。'); }
   catch (e) { prompt('手動複製這個連結:', url); }
 });
+
+// 短連結載入:?id=code → 向 worker 取回狀態
+(async function importFromQuery() {
+  const id = new URLSearchParams(location.search).get('id');
+  if (!id) return;
+  try {
+    const r = await fetch(SHORTURL_API + '/api/template/' + encodeURIComponent(id));
+    const d = await r.json();
+    if (d && d.state && Array.isArray(d.state.messages)) {
+      state = d.state;
+      const dset = DEMO.settings;
+      for (const k of Object.keys(dset)) if (state.settings[k] === undefined) state.settings[k] = dset[k];
+      history.replaceState(null, '', location.pathname);
+      save(); render();
+    }
+  } catch (e) { console.warn('短連結載入失敗', e); }
+})();
 
 // ── 腳本 JSON 進出 ──
 $('#export-json').addEventListener('click', () => {
