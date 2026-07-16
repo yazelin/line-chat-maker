@@ -349,7 +349,12 @@ function cleanClone() {
 async function renderCanvasNative() {
   const src = $('#phone-wrap');
   const w = src.offsetWidth, h = src.offsetHeight, scale = 2;
-  const pad = state.settings.backlight > 0 ? 120 : 30;
+  // 邊距=各視覺效果的實際外溢量,陰影/光暈/背光都不能被切
+  const st = state.settings;
+  let pad = 44;                                            // level-screen/chat 陰影(8+30)
+  if (st.frameLevel === 'phone') pad = Math.max(pad, 96);  // 機身陰影(24+60)
+  if (st.glow > 0) pad = Math.max(pad, st.glow + 20);      // 螢幕光暈
+  if (st.backlight > 0) pad = Math.max(pad, 210);          // 背光(inset -130 + blur 60)
   const css = await (await fetch('style.css')).text();
   const wrapEl = document.createElement('div');
   wrapEl.setAttribute('style', `--accent:#06c755;--fg:#1c1917;--muted:#6b6560;--border:#e5e2de;padding:${pad}px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC','Microsoft JhengHei',sans-serif;line-height:1.6;color:#1c1917;`);
