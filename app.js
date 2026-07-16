@@ -77,9 +77,9 @@ function render() {
   if (st.backlight > 0) {
     const hx = (st.backColor || '#06c755').replace('#', '');
     const r = parseInt(hx.slice(0, 2), 16), g = parseInt(hx.slice(2, 4), 16), b = parseInt(hx.slice(4, 6), 16);
-    const a1 = (st.backlight / 100 * 0.55).toFixed(2), a2 = (st.backlight / 100 * 0.24).toFixed(2);
+    const a1 = (st.backlight / 100 * 0.85).toFixed(2), a2 = (st.backlight / 100 * 0.35).toFixed(2);
     bl.style.display = '';
-    bl.style.background = `radial-gradient(ellipse 55% 55% at 50% 50%, rgba(${r},${g},${b},${a1}) 0%, rgba(139,92,246,${a2}) 42%, transparent 72%)`;
+    bl.style.background = `radial-gradient(ellipse 62% 58% at 50% 50%, rgba(${r},${g},${b},${a1}) 0%, rgba(${r},${g},${b},${a1}) 45%, rgba(139,92,246,${a2}) 66%, transparent 82%)`;
   } else { bl.style.display = 'none'; }
   document.body.classList.toggle('dark', !!st.darkUI);
   $('#set-height').value = st.height || 'auto';

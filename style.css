@@ -24,7 +24,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "N
 .stage { flex: 1 1 24rem; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2.2rem; }
 .phone-wrap { position: relative; width: 100%; max-width: 24rem; }
 .phone-wrap .phone { position: relative; z-index: 1; }
-.phone-backlight { position: absolute; inset: -90px; z-index: 0; filter: blur(70px); pointer-events: none; }
+.phone-backlight { position: absolute; inset: -130px; z-index: 0; filter: blur(60px); pointer-events: none; }
 .wm-preview { position: absolute; right: 6px; bottom: 2px; z-index: 2; font-size: 14px; color: rgba(0,0,0,0.5); text-shadow: 0 1px 0 rgba(255,255,255,0.6); pointer-events: none; }
 .phone { width: 100%; max-width: 24rem; position: relative; }
 .phone .screen { overflow: hidden; display: flex; flex-direction: column; }
