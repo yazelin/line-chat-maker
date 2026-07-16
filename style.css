@@ -86,7 +86,8 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "N
 .footer .legal { font-size: 0.72rem; }
 
 /* 手機固定高模式:內容貼底,超出的往上裁(像真的聊天室) */
-.phone.fixedh .line-chat { flex: 1; min-height: 0; overflow-y: auto; }
+.phone.fixedh .line-chat { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.phone.fixedh .line-chat::-webkit-scrollbar { display: none; }
 
 /* 圖片/貼圖/語音/檔案訊息 */
 .line-chat .imgmsg { display: inline-block; border-radius: 14px; overflow: hidden; max-width: 70%; cursor: pointer; }

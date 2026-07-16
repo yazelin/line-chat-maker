@@ -81,6 +81,8 @@ function render() {
     screen.style.boxShadow = st.glow > 0 ? `0 0 ${st.glow}px rgba(150,185,255,${Math.min(0.9, st.glow / 100)})` : '0 8px 30px rgba(0,0,0,0.12)';
   }
   $('#notch').className = 'notch ' + st.notch;
+  const sbPad = st.frameLevel === 'phone' ? Math.max(20, Math.round(st.radius * 0.62)) : 14;
+  $('#phone .statusbar').style.padding = `0.35rem ${sbPad}px 0.1rem`;
   document.querySelectorAll('.sbtn').forEach((n) => { n.style.display = st.frameLevel === 'phone' && st.buttons ? '' : 'none'; });
 
   // 狀態列
