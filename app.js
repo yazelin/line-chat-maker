@@ -414,7 +414,7 @@ $('#export-html').addEventListener('click', async () => {
   }).filter(Boolean).join('\n');
   const clone = cleanClone();
   const wm = state.settings.watermark ? '<div style="text-align:right;font:12px/1.6 sans-serif;color:rgba(0,0,0,0.45)">示意圖</div>' : '';
-  const reset = '.lcm-embed *{margin:0;padding:0;border:0;box-sizing:border-box;background:none;font:inherit;color:inherit;}';
+  const reset = '.lcm-embed *{margin:0;padding:0;border:0;border-radius:0;box-shadow:none;box-sizing:border-box;background:none;font:inherit;color:inherit;}';
   const autoplay = !!state.settings.embedAutoplay;
   const embJs = `<script>(function(){var s=document.currentScript,r=s.closest('.lcm-embed');s.remove();var c=r.querySelector('.line-chat');function bottom(){if(c)c.scrollTop=c.scrollHeight}bottom();${autoplay ? "var ms=[].slice.call(r.querySelectorAll('.line-chat>div'));var io=new IntersectionObserver(function(en){if(!en[0].isIntersecting)return;io.disconnect();ms.forEach(function(m){m.style.visibility='hidden'});var i=0;(function st(){if(i>=ms.length)return;var m=ms[i++];m.style.visibility='';m.style.animation='lcmIn .3s ease-out';bottom();setTimeout(st,650)})()},{threshold:0.4});io.observe(r);" : ''}})();<\/script>`;
   const html = `<!-- LINE 對話製造機產生的內嵌片段:整段貼進你的頁面即可顯示。僅供創作示意 https://yazelin.github.io/line-chat-maker/ -->\n<div class="lcm-embed" style="max-width:24rem;margin:1.5rem auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC','Microsoft JhengHei',sans-serif;line-height:1.6;">\n${clone.outerHTML}\n${wm}\n${embJs}\n</div>\n<style>\n${reset}\n${scoped}\n@keyframes lcmIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }\n</style>`;
