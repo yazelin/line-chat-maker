@@ -383,7 +383,7 @@ function addLeft() {
 }
 function lastLeftPid() { for (let i = state.messages.length - 1; i >= 0; i--) { const m = state.messages[i]; if (m.type === 'msg' && m.side === 'left') return m.personId; } return state.people[0] && state.people[0].id; }
 
-// ── 圖片上傳(頭像 96 / 背景 800 / 圖片訊息 480 / 貼圖 320 保留透明) ──
+// ── 圖片上傳(頭像 96 PNG / 背景 800 JPEG / 圖片訊息 480 JPEG / 貼圖 320 PNG 保留透明) ──
 $('#file-avatar').addEventListener('change', (e) => {
   const f = e.target.files[0]; if (!f) return;
   const img = new Image();
@@ -397,11 +397,14 @@ $('#file-avatar').addEventListener('change', (e) => {
       bgTarget = false;
     } else if (imgTarget !== null) {
       const m = state.messages[imgTarget];
-      const maxW = m && m.kind === 'sticker' ? 320 : 480;
+      const sticker = m && m.kind === 'sticker';
+      const maxW = sticker ? 320 : 480;
       const sc = Math.min(1, maxW / img.width);
       c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
-      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-      if (m) m.img = c.toDataURL('image/png');
+      const g = c.getContext('2d');
+      if (!sticker) { g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); } // JPEG 無透明,先鋪白
+      g.drawImage(img, 0, 0, c.width, c.height);
+      if (m) m.img = sticker ? c.toDataURL('image/png') : c.toDataURL('image/jpeg', 0.85);
       imgTarget = null;
     } else if (avatarTarget) {
       c.width = c.height = 96;
