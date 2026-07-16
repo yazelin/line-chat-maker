@@ -550,7 +550,52 @@ async function importFromQuery() {
     }
   } catch (e) { console.warn('短連結載入失敗', e); }
 }
-async function renderDrafts() {} // 草稿分頁下一步實作
+// ── 草稿分頁 ──
+const fmtTime = (t) => new Date(t).toLocaleString('zh-TW', { hour12: false, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+async function renderDrafts() {
+  const box = $('#draft-list');
+  if (!box) return;
+  if (idbDead) { box.innerHTML = '<p class="hint">此瀏覽器無法本機保存(私密視窗?),請用「匯出腳本 JSON」備份。</p>'; return; }
+  const all = (await draftAll().catch(() => [])).sort((a, b) => b.updatedAt - a.updatedAt);
+  box.innerHTML = '';
+  all.forEach((d) => {
+    const row = el('div', 'draft-item' + (d.id === currentId ? ' cur' : ''));
+    const name = document.createElement('input');
+    name.value = d.name; name.title = '點擊改名';
+    name.addEventListener('change', async () => {
+      const v = name.value.trim() || '未命名';
+      if (d.id === currentId) { currentName = v; persistNow(); }
+      else { const full = await draftGet(d.id); if (full) { full.name = v; await draftPut(full).catch(saveFailed); } }
+      renderDrafts();
+    });
+    const meta = el('span', 'draft-meta');
+    meta.textContent = `${fmtTime(d.updatedAt)} · ${Math.max(1, Math.round(JSON.stringify(d.state).length / 1024))} KB`;
+    const acts = el('span', 'draft-acts');
+    const mk = (label, title, fn) => { const b = el('button'); b.textContent = label; b.title = title; b.addEventListener('click', fn); acts.appendChild(b); };
+    if (d.id !== currentId) mk('開啟', '切換到這份草稿', async () => { const full = await draftGet(d.id); if (full) { activate(full); render(); renderDrafts(); } });
+    mk('複製', '複製一份', async () => { const full = await draftGet(d.id); if (full) { await createDraft(JSON.parse(JSON.stringify(full.state)), full.name + ' 副本'); renderDrafts(); } });
+    mk('刪除', '刪除這份草稿', async () => {
+      if (!confirm(`刪除「${d.name}」?此動作無法復原。`)) return;
+      await draftDelete(d.id).catch(() => {});
+      if (d.id === currentId) {
+        currentId = null;
+        const rest = (await draftAll().catch(() => [])).sort((a, b) => b.updatedAt - a.updatedAt);
+        if (rest[0]) activate(rest[0]); else activate(await createDraft(migrate(JSON.parse(JSON.stringify(DEMO))), '範例'));
+        render();
+      }
+      renderDrafts();
+    });
+    row.appendChild(name); row.appendChild(meta); row.appendChild(acts);
+    box.appendChild(row);
+  });
+}
+$('#draft-new').addEventListener('click', async () => {
+  const blank = migrate(JSON.parse(JSON.stringify(DEMO)));
+  blank.settings.title = '新對話'; blank.messages = [];
+  activate(await createDraft(blank, '新對話'));
+  render(); renderDrafts();
+});
+document.querySelector('.tabs [data-pane="drafts"]').addEventListener('click', renderDrafts);
 
 // ── 腳本 JSON 進出 ──
 $('#export-json').addEventListener('click', () => {
