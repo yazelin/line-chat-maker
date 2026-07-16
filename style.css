@@ -134,3 +134,18 @@ body.previewing [contenteditable]:hover, body.previewing [contenteditable]:focus
 body.previewing .chat-addbar button:not(#preview-toggle):not(.playbtn) { display: none; }
 #preview-toggle { border-color: #888; }
 body.previewing #preview-toggle { background: #333; color: #fff; border-color: #333; }
+
+/* 暗色工作區(只換編輯環境,不動作品本身) */
+body.dark { background: #0f1013; color: #e5e2de; }
+body.dark .topbar h1 { color: #f4f2ef; }
+body.dark .topbar .tag, body.dark .hint, body.dark .panel label { color: #9aa0a8; }
+body.dark .panel { background: #17181c; border-color: #2a2c32; }
+body.dark .panel input[type=text], body.dark .panel input[type=number], body.dark .panel select { background: #1f2126; border-color: #33363c; color: #e5e2de; }
+body.dark .tabs { border-bottom-color: #2a2c32; }
+body.dark .tabs .tab { color: #8a8f98; }
+body.dark .tabs .tab.active { color: var(--accent); }
+body.dark .addbar button, body.dark .chat-addbar button { background: #1f2126; border-color: #33363c; color: #c8ccd2; }
+body.dark .addbar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+body.dark .chat-addbar .playbtn { background: var(--accent); border-color: var(--accent); color: #fff; }
+body.dark .footer { color: #8a8f98; }
+body.dark .panel h2 { color: #d7dade; }

@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, glowColor: '#96b9ff', height: 'auto', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, glowColor: '#96b9ff', darkUI: false, height: 'auto', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -69,6 +69,8 @@ function render() {
   $('#set-batttext').checked = !!st.battText;
   $('#set-glow').value = st.glow; $('#glow-val').textContent = st.glow;
   $('#set-glowcolor').value = st.glowColor || '#96b9ff';
+  $('#set-darkui').checked = !!st.darkUI;
+  document.body.classList.toggle('dark', !!st.darkUI);
   $('#set-height').value = st.height || 'auto';
   $('#set-heightpx').value = st.heightPx || 768;
   $('#lbl-heightpx').style.display = st.height === 'fixed' ? '' : 'none';
@@ -266,6 +268,7 @@ $('#set-battery').addEventListener('input', (e) => { state.settings.battery = +e
 $('#set-batttext').addEventListener('change', (e) => { state.settings.battText = e.target.checked; save(); render(); });
 $('#set-glow').addEventListener('input', (e) => { state.settings.glow = +e.target.value; save(); render(); });
 $('#set-glowcolor').addEventListener('input', (e) => { state.settings.glowColor = e.target.value; save(); render(); });
+$('#set-darkui').addEventListener('change', (e) => { state.settings.darkUI = e.target.checked; save(); render(); });
 $('#draft').addEventListener('input', () => { state.settings.draft = $('#draft').textContent; save(); });
 $('#set-announce').addEventListener('change', (e) => { state.settings.announceOn = e.target.checked; save(); render(); });
 $('#set-embplay').addEventListener('change', (e) => { state.settings.embedAutoplay = e.target.checked; save(); });
