@@ -1,0 +1,62 @@
+:root { --accent: #06c755; --fg: #1c1917; --muted: #6b6560; --border: #e5e2de; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Microsoft JhengHei", sans-serif; color: var(--fg); background: #faf9f7; line-height: 1.6; }
+.topbar { text-align: center; padding: 1.2rem 1rem 0.4rem; }
+.topbar h1 { margin: 0; font-size: 1.4rem; }
+.topbar .tag { color: var(--muted); font-size: 0.85rem; margin: 0.3rem 0 0; }
+
+.layout { display: flex; gap: 1.5rem; max-width: 62rem; margin: 0 auto; padding: 1rem; align-items: flex-start; flex-wrap: wrap; }
+.panel { flex: 1 1 16rem; min-width: 15rem; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 1rem; }
+.panel h2 { font-size: 0.95rem; margin: 0.8rem 0 0.5rem; } .panel h2:first-child { margin-top: 0; }
+.panel label { display: block; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--muted); }
+.panel label input[type=text], .panel label input[type=number] { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; }
+.panel label.row { display: flex; align-items: center; gap: 0.4rem; }
+.addbar { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.addbar button { border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 0.35rem 0.7rem; font-size: 0.85rem; cursor: pointer; }
+.addbar button:hover { border-color: var(--accent); color: var(--accent); }
+.addbar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.hint { font-size: 0.75rem; color: var(--muted); }
+
+.stage { flex: 1 1 24rem; display: flex; justify-content: center; }
+.phone { width: 24rem; max-width: 100%; border-radius: 8px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+.phone.framed { border-radius: 26px; border: 10px solid #111; }
+.phone:not(.framed) [data-frame-only] { display: none; }
+.statusbar { display: flex; justify-content: space-between; background: #111; color: #fff; font-size: 0.72rem; padding: 0.2rem 0.9rem; }
+.linehead { display: flex; align-items: center; gap: 0.6rem; background: #2d3b4e; color: #fff; padding: 0.5rem 0.8rem; font-size: 0.95rem; }
+.linehead .back { font-size: 1.3rem; line-height: 1; }
+.linehead .htitle { flex: 1; font-weight: 600; }
+.linehead .hmembers { font-weight: 400; opacity: 0.7; margin-left: 0.25rem; }
+.inputbar { display: flex; align-items: center; gap: 0.6rem; background: #fff; padding: 0.45rem 0.8rem; color: #555; }
+.inputbar .fakein { flex: 1; background: #f1f0ee; border-radius: 999px; padding: 0.2rem 0.8rem; color: #999; }
+
+/* LINE 對話區(與 yazelin.github.io About 同款,加編輯態) */
+.line-chat { background: #7d9bc1; padding: 1rem 1rem 0.5rem; min-height: 14rem; }
+.line-chat .who { display: block; font-size: 0.75rem; color: #eef3f9; margin: 0 0 0.15rem 0.3rem; }
+.line-chat .msg { position: relative; display: flex; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.6rem; }
+.line-chat .av { width: 36px; height: 36px; border-radius: 50%; flex: none; margin-top: 2px; cursor: pointer; background: #cfd8e3; object-fit: cover; }
+.line-chat .mbody { max-width: 85%; }
+.line-chat .msg p { display: inline-block; background: #fff; border-radius: 14px; padding: 0.4rem 0.8rem; margin: 0; font-size: 0.9rem; line-height: 1.5; color: #1c1917; text-align: left; white-space: pre-wrap; word-break: break-word; }
+.line-chat .q { display: block; font-size: 0.78rem; color: #57534e; border-bottom: 1px solid rgba(0,0,0,0.14); padding-bottom: 0.3rem; margin-bottom: 0.3rem; }
+.line-chat .q strong { display: block; font-size: 0.72rem; }
+.line-chat .time { font-size: 0.7rem; color: #dde7f2; margin-left: 0.35rem; white-space: nowrap; }
+.line-chat .read { font-size: 0.7rem; color: #dde7f2; margin-right: 0.35rem; white-space: nowrap; }
+.line-chat .msg.cont { margin-top: -0.25rem; padding-left: calc(36px + 0.5rem); }
+.line-chat .msg.me { display: block; text-align: right; }
+.line-chat .msg.me p { background: #8de055; max-width: 85%; }
+.line-chat .skip, .line-chat .date { position: relative; text-align: center; margin: 0.7rem 0; }
+.line-chat .skip span, .line-chat .date span { display: inline-block; font-size: 0.72rem; color: #f0f4f9; background: rgba(0,0,0,0.18); border-radius: 999px; padding: 0.12rem 0.8rem; }
+[contenteditable]:hover { outline: 1px dashed rgba(255,255,255,0.6); }
+[contenteditable]:focus { outline: 2px solid var(--accent); }
+.line-chat p[contenteditable]:hover { outline: 1px dashed rgba(0,0,0,0.3); }
+
+/* 懸浮控制鈕(匯出時移除) */
+.ctl { position: absolute; top: -0.9rem; right: 0; display: none; gap: 2px; z-index: 5; }
+.msg:hover > .ctl, .skip:hover > .ctl, .date:hover > .ctl { display: flex; }
+.ctl button { border: 0; background: rgba(0,0,0,0.55); color: #fff; border-radius: 6px; font-size: 0.68rem; padding: 0.1rem 0.4rem; cursor: pointer; }
+.ctl button:hover { background: var(--accent); }
+
+.footer { text-align: center; padding: 1.5rem 1rem 2rem; color: var(--muted); font-size: 0.8rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.footer nav { display: flex; gap: 1rem; justify-content: center; }
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.footer .legal { font-size: 0.72rem; }

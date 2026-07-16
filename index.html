@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LINE 對話製造機 — 免費線上做出以假亂真的對話截圖</title>
+<meta name="description" content="免費、免註冊、完全離線的 LINE 風格對話截圖產生器。所見即所得編輯、頭像上傳、引用回覆、手機外框,一鍵匯出 PNG。">
+<meta property="og:title" content="LINE 對話製造機">
+<meta property="og:description" content="免費、免註冊、完全離線。所見即所得做出 LINE 風格對話截圖,一鍵匯出 PNG。">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<meta name="theme-color" content="#06c755">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <h1>LINE 對話製造機</h1>
+  <p class="tag">免費・免註冊・完全離線。點畫面上的字直接改,改完匯出 PNG。<strong>僅供創作示意</strong>,請勿用於詐騙或誤導。</p>
+</header>
+
+<main class="layout">
+  <aside class="panel">
+    <h2>聊天室設定</h2>
+    <label>聊天室名稱 <input id="set-title" type="text"></label>
+    <label>成員數(0=不顯示) <input id="set-members" type="number" min="0"></label>
+    <label>背景色 <input id="set-bg" type="color"></label>
+    <label class="row"><input id="set-frame" type="checkbox"> 手機外框</label>
+    <label class="row"><input id="set-watermark" type="checkbox"> 匯出加「示意圖」浮水印</label>
+    <label>狀態列時間 <input id="set-clock" type="text" placeholder="16:08"></label>
+
+    <h2>新增內容</h2>
+    <div class="addbar">
+      <button id="add-left">+ 他人訊息</button>
+      <button id="add-right">+ 我的訊息</button>
+      <button id="add-skip">+ (略)分隔</button>
+      <button id="add-date">+ 日期分隔</button>
+    </div>
+    <p class="hint">訊息上的文字、暱稱、時間都可以直接點了改;頭像點了換圖(圖只存在你的瀏覽器)。滑到訊息上會出現小按鈕:上移/下移/換邊/引用/刪除,匯出時不會出現。</p>
+
+    <h2>匯出</h2>
+    <div class="addbar">
+      <button id="export-png" class="primary">匯出 PNG</button>
+      <button id="export-json">匯出腳本 JSON</button>
+      <button id="import-json">匯入腳本 JSON</button>
+      <button id="reset">清空重來</button>
+    </div>
+    <p class="hint">腳本 JSON 讓你存檔、分享,也讓 AI 直接生成整段對話(見 repo 的 skills/)。</p>
+  </aside>
+
+  <section class="stage">
+    <div id="phone" class="phone">
+      <div class="statusbar" data-frame-only><span id="clock">16:08</span><span class="sicons">▲ ▮▮▮▯ 87%</span></div>
+      <div class="linehead" data-frame-only>
+        <span class="back">‹</span>
+        <span class="htitle"><span id="chat-title">C# 讀書會</span><span id="chat-members" class="hmembers">(143)</span></span>
+        <span class="hicons">☰</span>
+      </div>
+      <div id="chat" class="line-chat"></div>
+      <div class="inputbar" data-frame-only><span>＋</span><span class="fakein">Aa</span><span>🎤</span></div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <span>用愛發電・<a href="https://yazelin.github.io/" target="_blank" rel="noopener">yazelin</a></span>
+  <nav>
+    <a href="https://github.com/yazelin/line-chat-maker" target="_blank" rel="noopener" title="GitHub 原始碼">GitHub</a>
+    <a href="https://www.facebook.com/yaze.lin.gm" target="_blank" rel="noopener" title="Facebook">Facebook</a>
+    <a href="https://buymeacoffee.com/yazelin" target="_blank" rel="noopener" title="請作者喝杯咖啡">Buy me a coffee</a>
+  </nav>
+  <span class="legal">非官方工具;LINE 為 LY Corporation 之商標,本站與其無任何關聯。</span>
+</footer>
+
+<input type="file" id="file-avatar" accept="image/*" hidden>
+<input type="file" id="file-json" accept="application/json" hidden>
+<script src="vendor/html2canvas.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
