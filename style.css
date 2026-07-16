@@ -11,6 +11,8 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "N
 .panel h2 { font-size: 0.95rem; margin: 0.8rem 0 0.5rem; } .panel h2:first-child { margin-top: 0; }
 .panel label { display: block; font-size: 0.85rem; margin-bottom: 0.5rem; color: var(--muted); }
 .panel label select { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background: #fff; }
+.panel label input[type=range] { width: 60%; vertical-align: middle; }
+.panel label .addbar { display: inline-flex; }
 .panel label input[type=text], .panel label input[type=number] { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; }
 .panel label.row { display: flex; align-items: center; gap: 0.4rem; }
 .addbar { display: flex; flex-wrap: wrap; gap: 0.4rem; }
@@ -21,12 +23,24 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "N
 
 .stage { flex: 1 1 24rem; min-width: 0; display: flex; justify-content: center; }
 .phone { width: 100%; max-width: 24rem; position: relative; }
-.phone .screen { border-radius: 8px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.12); display: flex; flex-direction: column; }
-.phone.framed { background: #1a1a1e; border-radius: 40px; padding: 8px; box-shadow: 0 24px 60px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08) inset; }
-.phone.framed .screen { border-radius: 32px; box-shadow: none; }
-.phone .notch { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); width: 88px; height: 22px; background: #0a0a0c; border-radius: 12px; z-index: 3; }
-.phone:not(.framed) [data-frame-only] { display: none; }
+.phone .screen { overflow: hidden; display: flex; flex-direction: column; }
+/* 僅對話/螢幕擷圖:擷圖是方角、無機身 */
+.phone.level-chat .screen, .phone.level-screen .screen { border-radius: 0; box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+.phone.level-chat [data-ui], .phone.level-chat [data-hw], .phone.level-screen [data-hw] { display: none; }
+/* 包含手機 */
+.phone.level-phone { background: #1a1a1e; border-radius: 40px; padding: 8px; box-shadow: 0 24px 60px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.08) inset; }
+.phone .notch { position: absolute; left: 50%; transform: translateX(-50%); background: #0a0a0c; z-index: 3; }
+.phone .notch.island { top: 15px; width: 88px; height: 22px; border-radius: 12px; }
+.phone .notch.notch { top: 8px; width: 150px; height: 24px; border-radius: 0 0 16px 16px; }
+.phone .notch.punch { top: 16px; width: 14px; height: 14px; border-radius: 50%; }
+.phone .notch.none { display: none; }
+/* 側邊按鈕 */
+.phone .sbtn { position: absolute; width: 3px; background: #2a2a30; border-radius: 2px; }
+.phone .sbtn.vol1 { left: -3px; top: 18%; height: 34px; }
+.phone .sbtn.vol2 { left: -3px; top: calc(18% + 44px); height: 34px; }
+.phone .sbtn.pwr { right: -3px; top: 24%; height: 52px; }
 .statusbar { display: flex; align-items: center; justify-content: space-between; background: #2d3b4e; color: #fff; font-size: 0.72rem; font-weight: 600; padding: 0.35rem 1.4rem 0.1rem; }
+.statusbar .batt-text { font-size: 0.68rem; margin-right: 2px; }
 .statusbar .sicons { display: flex; align-items: center; gap: 5px; }
 .homebar { background: #fff; padding: 0.3rem 0 0.4rem; text-align: center; }
 .homebar span { display: inline-block; width: 110px; height: 4px; border-radius: 999px; background: rgba(0,0,0,0.75); }
@@ -73,3 +87,42 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "N
 
 /* 手機固定高模式:內容貼底,超出的往上裁(像真的聊天室) */
 .phone.fixedh .line-chat { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
+
+/* 圖片/貼圖/語音/檔案訊息 */
+.line-chat .imgmsg { display: inline-block; border-radius: 14px; overflow: hidden; max-width: 70%; cursor: pointer; }
+.line-chat .imgmsg img { display: block; width: 100%; }
+.line-chat .sticker { display: inline-block; width: 120px; cursor: pointer; }
+.line-chat .sticker img { display: block; width: 100%; }
+.line-chat .voice { display: inline-flex; align-items: center; gap: 8px; }
+.line-chat .voice .vbars { display: inline-flex; align-items: center; gap: 2px; }
+.line-chat .voice .vbars i { display: inline-block; width: 3px; border-radius: 2px; background: #7a7f87; }
+.line-chat .msg.me .voice .vbars i { background: #3f7a2c; }
+.line-chat .file { display: inline-flex; align-items: center; gap: 8px; }
+.line-chat .file .fmeta { display: flex; flex-direction: column; }
+.line-chat .file .fname { font-size: 0.88rem; }
+.line-chat .file .fsize { font-size: 0.7rem; color: #8a8a8a; }
+
+/* 左側分頁 */
+.tabs { display: flex; gap: 0.3rem; margin-bottom: 0.8rem; border-bottom: 1px solid var(--border); }
+.tabs .tab { border: 0; background: none; padding: 0.4rem 0.8rem; font-size: 0.9rem; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; }
+.tabs .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+.pane { display: none; }
+.pane.active { display: block; }
+
+/* 聊天視窗內的新增浮條(匯出時剝掉) */
+.chat-addbar { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 8px; background: rgba(0,0,0,0.06); justify-content: center; }
+.chat-addbar button { border: 1px solid var(--border); background: #fff; border-radius: 999px; font-size: 0.72rem; padding: 0.15rem 0.6rem; cursor: pointer; color: #555; }
+.chat-addbar button:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 輸入框草稿:空的時候顯示 Aa 佔位 */
+.inputbar .fakein:empty::before { content: attr(data-ph); color: #999; }
+.inputbar .fakein { color: #333; outline: none; }
+/* 播放動畫 */
+.chat-addbar .playbtn { background: var(--accent); color: #fff; border-color: var(--accent); }
+.line-chat .appear { animation: lcmIn 0.3s ease-out; }
+@keyframes lcmIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* 置頂公告 */
+.announce { display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.92); padding: 0.3rem 0.7rem; font-size: 0.75rem; color: #555; border-bottom: 1px solid rgba(0,0,0,0.06); }
+.announce #announce-text { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; outline: none; }
+.announce .achev { color: #999; }

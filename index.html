@@ -29,27 +29,46 @@
 
 <main class="layout">
   <aside class="panel">
-    <h2>聊天室設定</h2>
+    <nav class="tabs">
+      <button class="tab active" data-pane="chatset">聊天室</button>
+      <button class="tab" data-pane="frameset">外框</button>
+      <button class="tab" data-pane="exportset">匯出</button>
+    </nav>
+
+    <section class="pane active" id="pane-chatset">
     <label>聊天類型 <select id="set-mode"><option value="group">群組</option><option value="dm">1對1</option></select></label>
     <label>聊天室名稱(1對1=對方名字) <input id="set-title" type="text"></label>
     <label>成員數(0=不顯示) <input id="set-members" type="number" min="0"></label>
     <label>背景色 <input id="set-bg" type="color"></label>
-    <label class="row"><input id="set-frame" type="checkbox"> 手機外框</label>
-    <label class="row"><input id="set-watermark" type="checkbox"> 匯出加「示意圖」浮水印</label>
-    <label>狀態列時間 <input id="set-clock" type="text" placeholder="16:08"></label>
+    <label>背景圖 <span class="addbar"><button id="set-bgimg" type="button">選圖</button><button id="clear-bgimg" type="button">清除</button></span></label>
+    <label class="row"><input id="set-announce" type="checkbox"> 置頂公告(文字在預覽上直接改)</label>
+    <p class="hint">訊息在右邊直接編:點文字改字、點頭像換圖、hover 出現小按鈕(上移/下移/換邊/引用/刪除),下方「+」新增各種訊息。這些編輯痕跡匯出時都不會出現。</p>
+    </section>
+
+    <section class="pane" id="pane-frameset">
+    <label>外框程度 <select id="set-frame-level"><option value="phone">包含手機</option><option value="screen">螢幕擷圖</option><option value="chat">僅對話</option></select></label>
+    <div id="grp-hw">
+    <h2>手機硬體</h2>
+    <label>鏡頭型式 <select id="set-notch"><option value="island">動態島</option><option value="notch">瀏海</option><option value="punch">挖孔</option><option value="none">滿版</option></select></label>
+    <label>螢幕圓角 <input id="set-radius" type="range" min="0" max="48" step="2"> <span id="radius-val"></span>px</label>
+    <label class="row"><input id="set-buttons" type="checkbox"> 側邊按鈕(音量/電源)</label>
+    </div>
+    <div id="grp-sb">
+    <h2>狀態列</h2>
+    <label>時間 <input id="set-clock" type="text" placeholder="16:08"></label>
+    <label>訊號格數 <input id="set-signal" type="range" min="0" max="4" step="1"> <span id="signal-val"></span></label>
+    <label class="row"><input id="set-wifi" type="checkbox"> WiFi 圖示</label>
+    <label>電量 <input id="set-battery" type="range" min="1" max="100" step="1"> <span id="battery-val"></span>%</label>
+    <label class="row"><input id="set-batttext" type="checkbox"> 顯示電量數字</label>
+    </div>
+    <h2>畫面</h2>
     <label>畫面高度 <select id="set-height"><option value="auto">依訊息內容</option><option value="fixed">固定高度</option></select></label>
     <label id="lbl-heightpx">固定高度(px) <input id="set-heightpx" type="number" min="300" step="10"></label>
+    <label>螢幕光暈 <input id="set-glow" type="range" min="0" max="100" step="5"> <span id="glow-val"></span></label>
+    </section>
 
-    <h2>新增內容</h2>
-    <div class="addbar">
-      <button id="add-left">+ 他人訊息</button>
-      <button id="add-right">+ 我的訊息</button>
-      <button id="add-skip">+ (略)分隔</button>
-      <button id="add-date">+ 日期分隔</button>
-    </div>
-    <p class="hint">訊息上的文字、暱稱、時間都可以直接點了改;頭像點了換圖(圖只存在你的瀏覽器)。滑到訊息上會出現小按鈕:上移/下移/換邊/引用/刪除,匯出時不會出現。</p>
-
-    <h2>匯出</h2>
+    <section class="pane" id="pane-exportset">
+    <label class="row"><input id="set-watermark" type="checkbox"> 匯出加「示意圖」浮水印</label>
     <div class="addbar">
       <button id="export-png" class="primary">匯出 PNG</button>
       <button id="export-html">嵌入</button>
@@ -57,29 +76,40 @@
       <button id="import-json">匯入腳本 JSON</button>
       <button id="reset">清空重來</button>
     </div>
-    <p class="hint">PNG=圖片;「嵌入」會複製一段 HTML,貼進部落格或任何網頁就能顯示。腳本 JSON 讓你存檔、分享,也讓 AI 直接生成整段對話(見 repo 的 skills/)。</p>
+    <p class="hint">PNG=圖片;「嵌入」會複製一段 HTML,貼進部落格或任何網頁就能顯示。腳本 JSON 讓你存檔、分享,也讓 AI 直接生成整段對話(見 repo 的 skills/)。僅供創作示意,請勿用於詐騙或誤導。</p>
+    </section>
   </aside>
 
   <section class="stage">
     <div id="phone" class="phone">
-      <div class="notch" data-frame-only></div>
+      <div class="sbtn vol1" data-hw></div><div class="sbtn vol2" data-hw></div><div class="sbtn pwr" data-hw></div>
+      <div class="notch" id="notch" data-hw></div>
       <div class="screen">
-        <div class="statusbar" data-frame-only>
+        <div class="statusbar" data-ui>
           <span id="clock">16:08</span>
           <span class="sicons">
-            <svg viewBox="0 0 18 12" width="16" height="11" fill="currentColor" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="0.8"/><rect x="5" y="5" width="3" height="7" rx="0.8"/><rect x="10" y="2" width="3" height="10" rx="0.8"/><rect x="15" y="0" width="3" height="12" rx="0.8" opacity="0.35"/></svg>
-            <svg viewBox="0 0 16 12" width="15" height="11" fill="currentColor" aria-hidden="true"><path d="M8 10.5a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zM8 6.6c-1.7 0-3.2.7-4.3 1.8l1.5 1.5A4 4 0 0 1 8 8.7c1.1 0 2 .4 2.8 1.2l1.5-1.5A6 6 0 0 0 8 6.6zM8 2.7A9.9 9.9 0 0 0 1 5.6l1.5 1.5A7.8 7.8 0 0 1 8 4.8c2.1 0 4.1.9 5.5 2.3L15 5.6a9.9 9.9 0 0 0-7-2.9z" transform="translate(0,-1.5)"/></svg>
-            <svg viewBox="0 0 25 12" width="24" height="11" aria-hidden="true"><rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity="0.5"/><rect x="2" y="2" width="15" height="8" rx="1.8" fill="currentColor"/><rect x="22.6" y="3.5" width="2" height="5" rx="1" fill="currentColor" opacity="0.5"/></svg>
+            <span id="batt-text" class="batt-text">87%</span>
+            <svg id="sig" viewBox="0 0 18 12" width="16" height="11" fill="currentColor" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx="0.8"/><rect x="5" y="5" width="3" height="7" rx="0.8"/><rect x="10" y="2" width="3" height="10" rx="0.8"/><rect x="15" y="0" width="3" height="12" rx="0.8"/></svg>
+            <svg id="wifi-ic" viewBox="0 0 16 12" width="15" height="11" fill="currentColor" aria-hidden="true"><path d="M8 10.5a1.4 1.4 0 1 0 0 2.8 1.4 1.4 0 0 0 0-2.8zM8 6.6c-1.7 0-3.2.7-4.3 1.8l1.5 1.5A4 4 0 0 1 8 8.7c1.1 0 2 .4 2.8 1.2l1.5-1.5A6 6 0 0 0 8 6.6zM8 2.7A9.9 9.9 0 0 0 1 5.6l1.5 1.5A7.8 7.8 0 0 1 8 4.8c2.1 0 4.1.9 5.5 2.3L15 5.6a9.9 9.9 0 0 0-7-2.9z" transform="translate(0,-1.5)"/></svg>
+            <svg viewBox="0 0 25 12" width="24" height="11" aria-hidden="true"><rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="currentColor" opacity="0.5"/><rect id="batt-fill" x="2" y="2" width="15" height="8" rx="1.8" fill="currentColor"/><rect x="22.6" y="3.5" width="2" height="5" rx="1" fill="currentColor" opacity="0.5"/></svg>
           </span>
         </div>
-        <div class="linehead" data-frame-only>
+        <div class="linehead" data-ui>
           <span class="back">‹</span>
           <span class="htitle"><span id="chat-title">C# Taiwan交流聚會</span><span id="chat-members" class="hmembers">(1947)</span></span>
           <span class="hicons"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg></span>
         </div>
+        <div class="announce" id="announce" data-ui>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="#e8862f" aria-hidden="true"><path d="M12 3 4 8H2v8h2l8 5V3zm7 4.5a6.5 6.5 0 0 1 0 9l-1.4-1.4a4.5 4.5 0 0 0 0-6.2L19 7.5z"/></svg>
+          <span id="announce-text" contenteditable></span>
+          <span class="achev">⌄</span>
+        </div>
         <div id="chat" class="line-chat"></div>
-        <div class="inputbar" data-frame-only><span class="plus">＋</span><span class="fakein">Aa</span><svg viewBox="0 0 24 24" width="18" height="18" fill="#8a8a8a" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
-        <div class="homebar" data-frame-only><span></span></div>
+        <div class="inputbar" data-ui><span class="plus">＋</span><span class="fakein" id="draft" contenteditable data-ph="Aa"></span><svg viewBox="0 0 24 24" width="18" height="18" fill="#8a8a8a" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
+        <div class="chat-addbar" id="chat-addbar">
+          <button data-add="left">+ 他人</button><button data-add="right">+ 我</button><button data-add="image">圖片</button><button data-add="sticker">貼圖</button><button data-add="voice">語音</button><button data-add="file">檔案</button><button data-add="skip">(略)</button><button data-add="date">日期</button><button data-add="play" class="playbtn">▶ 播放</button>
+        </div>
+        <div class="homebar" data-ui><span></span></div>
       </div>
     </div>
   </section>
