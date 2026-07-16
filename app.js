@@ -174,10 +174,14 @@ $('#export-png').addEventListener('click', async () => {
   });
   if (state.settings.watermark) {
     const ctx = canvas.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // html2canvas 會殘留 scale 變換
+    const pad = Math.round(canvas.width / 20);
     ctx.font = `${Math.round(canvas.width / 30)}px sans-serif`;
-    ctx.fillStyle = 'rgba(0,0,0,0.38)';
     ctx.textAlign = 'right';
-    ctx.fillText('示意圖', canvas.width - 14, canvas.height - 14);
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fillText('示意圖', canvas.width - pad + 2, canvas.height - pad + 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillText('示意圖', canvas.width - pad, canvas.height - pad);
   }
   const a = document.createElement('a');
   a.download = 'line-chat.png';
