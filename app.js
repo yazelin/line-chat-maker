@@ -386,6 +386,22 @@ $('#export-html').addEventListener('click', async () => {
   }
 });
 
+// ── 分享連結(#s= hash,打開即重現) ──
+document.querySelector('#share-link').addEventListener('click', async () => {
+  const toB64 = (str) => btoa(unescape(encodeURIComponent(str))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const base = location.origin + location.pathname + '#s=';
+  let url = base + toB64(JSON.stringify(state));
+  if (url.length > 8000 && confirm('對話裡有圖片,連結會非常長(部分平台可能吃不下)。要改用去掉圖片的精簡版連結嗎?')) {
+    const slim = JSON.parse(JSON.stringify(state));
+    slim.people.forEach((p) => { p.avatar = null; });
+    slim.settings.bgImage = null;
+    slim.messages.forEach((m) => { if (m.img) m.img = null; });
+    url = base + toB64(JSON.stringify(slim));
+  }
+  try { await navigator.clipboard.writeText(url); alert('分享連結已複製!對方打開就是這段對話。'); }
+  catch (e) { prompt('手動複製這個連結:', url); }
+});
+
 // ── 腳本 JSON 進出 ──
 $('#export-json').addEventListener('click', () => {
   const a = document.createElement('a');
