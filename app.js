@@ -16,28 +16,108 @@ const DEMO = {
   ],
 };
 
-let state = load();
+let state;               // 目前草稿的 state(其餘程式碼照用)
+let currentId = null;    // 目前草稿 id
+let currentName = '';    // 目前草稿名稱
 let avatarTarget = null; // personId 等待換頭像
 let bgTarget = false;   // 等待上傳背景圖
 let imgTarget = null;   // 等待換圖的 image 訊息 index
 
-function load() {
-  try {
-    const h = location.hash.match(/^#s=(.+)$/);
-    if (h) { const s = JSON.parse(decodeURIComponent(escape(atob(h[1].replace(/-/g, '+').replace(/_/g, '/'))))); history.replaceState(null, '', location.pathname); save(s); return s; }
-  } catch (e) { console.warn('hash 匯入失敗', e); }
-  try {
-    const s = JSON.parse(localStorage.getItem('lcm-state'));
-    if (s && s.messages) {
-      if (s.settings.frameLevel === undefined) s.settings.frameLevel = s.settings.frame === false ? 'chat' : 'phone';
-      const d = DEMO.settings;
-      for (const k of Object.keys(d)) if (s.settings[k] === undefined) s.settings[k] = d[k];
-      return s;
-    }
-  } catch (e) {}
-  return JSON.parse(JSON.stringify(DEMO));
+// ── 草稿儲存:IndexedDB(wrapper 參考 line-sticker-studio);lcm-state 降為收件匣 ──
+const IDB_NAME = 'line-chat-maker', IDB_STORE = 'drafts';
+let _idb = null, idbDead = false;
+function idbOpen() {
+  if (_idb) return _idb;
+  _idb = new Promise((res, rej) => {
+    const rq = indexedDB.open(IDB_NAME, 1);
+    rq.onupgradeneeded = () => { if (!rq.result.objectStoreNames.contains(IDB_STORE)) rq.result.createObjectStore(IDB_STORE, { keyPath: 'id' }); };
+    rq.onsuccess = () => res(rq.result);
+    rq.onerror = () => rej(rq.error);
+  });
+  return _idb;
 }
-function save(s) { localStorage.setItem('lcm-state', JSON.stringify(s || state)); }
+function idbTx(fn, mode) {
+  return idbOpen().then((db) => new Promise((res, rej) => {
+    const tx = db.transaction(IDB_STORE, mode || 'readonly');
+    const rq = fn(tx.objectStore(IDB_STORE));
+    tx.oncomplete = () => res(rq && rq.result);
+    tx.onerror = () => rej(tx.error);
+    tx.onabort = () => rej(tx.error);
+  }));
+}
+const draftPut = (d) => idbTx((s) => s.put(d), 'readwrite');
+const draftGet = (id) => idbTx((s) => s.get(id));
+const draftAll = () => idbTx((s) => s.getAll());
+const draftDelete = (id) => idbTx((s) => s.delete(id), 'readwrite');
+
+let quotaWarned = false;
+function saveFailed(e) {
+  console.warn('草稿寫入失敗', e);
+  if (e && e.name === 'QuotaExceededError' && !quotaWarned) { quotaWarned = true; alert('本機儲存空間滿了:請到「草稿」分頁刪除舊草稿,或先匯出 JSON 備份。'); }
+}
+function persistNow() {
+  if (idbDead || !currentId) return;
+  draftPut({ id: currentId, name: currentName || (state.settings && state.settings.title) || '未命名', updatedAt: Date.now(), state }).catch(saveFailed);
+}
+let saveTimer = null;
+function save() { clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveTimer = null; persistNow(); }, 300); }
+function flushSave() { if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; persistNow(); } }
+
+function migrate(s) {
+  if (s.settings.frameLevel === undefined) s.settings.frameLevel = s.settings.frame === false ? 'chat' : 'phone';
+  const d = DEMO.settings;
+  for (const k of Object.keys(d)) if (s.settings[k] === undefined) s.settings[k] = d[k];
+  return s;
+}
+function newId() { return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+async function createDraft(s, name) {
+  const d = { id: newId(), name: name || (s.settings && s.settings.title) || '未命名', updatedAt: Date.now(), state: s };
+  if (!idbDead) await draftPut(d).catch(saveFailed);
+  return d;
+}
+function activate(d) {
+  flushSave();
+  currentId = d.id; currentName = d.name; state = d.state;
+  try { localStorage.setItem('lcm-current', currentId); } catch (e) {}
+}
+async function adoptIncoming(s) {
+  migrate(s);
+  const all = idbDead ? [] : await draftAll().catch(() => []);
+  const latest = all.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+  if (latest && JSON.stringify(latest.state) === JSON.stringify(s)) return latest;
+  return createDraft(s);
+}
+function toast(msg) {
+  const t = el('div', 'toast'); t.textContent = msg;
+  document.body.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3200);
+}
+
+async function boot() {
+  try { await idbOpen(); } catch (e) { idbDead = true; console.warn('IndexedDB 不可用,本次僅記憶體運作,請匯出 JSON 備份', e); }
+  try { // 收件匣:AI/Playwright 注入 + 舊版一次性遷移,同一條規則
+    const inbox = JSON.parse(localStorage.getItem('lcm-state'));
+    if (inbox && inbox.messages) { activate(await adoptIncoming(inbox)); localStorage.removeItem('lcm-state'); }
+  } catch (e) {}
+  const h = location.hash.match(/^#s=(.+)$/);
+  if (h) { // 長連結 → 開新草稿,原創作不動
+    try {
+      const s = JSON.parse(decodeURIComponent(escape(atob(h[1].replace(/-/g, '+').replace(/_/g, '/')))));
+      history.replaceState(null, '', location.pathname + location.search);
+      if (s && s.messages) { activate(await adoptIncoming(s)); toast('已開成新草稿;你原本的創作都在「草稿」分頁'); }
+    } catch (e) { console.warn('hash 匯入失敗', e); }
+  }
+  if (!currentId) {
+    const all = idbDead ? [] : await draftAll().catch(() => []);
+    const d = all.find((x) => x.id === localStorage.getItem('lcm-current')) || all.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+    if (d) activate(d);
+    else activate(await createDraft(migrate(JSON.parse(JSON.stringify(DEMO))), '範例'));
+  }
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  render();
+  importFromQuery();
+}
 
 const $ = (sel) => document.querySelector(sel);
 const chatEl = $('#chat');
@@ -455,22 +535,22 @@ document.querySelector('#share-link').addEventListener('click', async () => {
   catch (e) { prompt('手動複製這個連結:', url); }
 });
 
-// 短連結載入:?id=code → 向 worker 取回狀態
-(async function importFromQuery() {
+// 短連結載入:?id=code → 向 worker 取回,開成新草稿(主要分享路徑,boot 尾端呼叫)
+async function importFromQuery() {
   const id = new URLSearchParams(location.search).get('id');
   if (!id) return;
   try {
     const r = await fetch(SHORTURL_API + '/api/template/' + encodeURIComponent(id));
     const d = await r.json();
     if (d && d.state && Array.isArray(d.state.messages)) {
-      state = d.state;
-      const dset = DEMO.settings;
-      for (const k of Object.keys(dset)) if (state.settings[k] === undefined) state.settings[k] = dset[k];
       history.replaceState(null, '', location.pathname);
-      save(); render();
+      activate(await adoptIncoming(d.state));
+      render(); renderDrafts();
+      toast('已開成新草稿;你原本的創作都在「草稿」分頁');
     }
   } catch (e) { console.warn('短連結載入失敗', e); }
-})();
+}
+async function renderDrafts() {} // 草稿分頁下一步實作
 
 // ── 腳本 JSON 進出 ──
 $('#export-json').addEventListener('click', () => {
@@ -482,11 +562,11 @@ $('#export-json').addEventListener('click', () => {
 $('#import-json').addEventListener('click', () => $('#file-json').click());
 $('#file-json').addEventListener('change', async (e) => {
   const f = e.target.files[0]; if (!f) return;
-  try { const s = JSON.parse(await f.text()); if (!s.messages) throw new Error('缺 messages'); state = s; save(); render(); }
+  try { const s = JSON.parse(await f.text()); if (!s.messages) throw new Error('缺 messages'); activate(await adoptIncoming(s)); render(); renderDrafts(); toast('已開成新草稿;原創作在「草稿」分頁'); }
   catch (err) { alert('JSON 讀不進來:' + err.message); }
   e.target.value = '';
 });
-$('#reset').addEventListener('click', () => { if (confirm('清空目前對話,回到範例?')) { state = JSON.parse(JSON.stringify(DEMO)); save(); render(); } });
+$('#reset').addEventListener('click', () => { if (confirm('清空目前這份草稿,回到範例?')) { state = migrate(JSON.parse(JSON.stringify(DEMO))); save(); render(); } });
 
 window.addEventListener('hashchange', () => { if (location.hash.startsWith('#s=')) location.reload(); });
 
@@ -523,5 +603,5 @@ $('#chat-addbar').addEventListener('click', (e) => {
   save(); render();
 });
 
-render();
+boot();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
