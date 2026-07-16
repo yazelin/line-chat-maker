@@ -594,7 +594,7 @@ async function renderDrafts() {
 }
 $('#draft-new').addEventListener('click', async () => {
   const blank = migrate(JSON.parse(JSON.stringify(DEMO)));
-  blank.settings.title = '新對話'; blank.messages = [];
+  blank.settings.title = '新對話'; blank.settings.members = 0; blank.settings.draft = ''; blank.settings.announceOn = false; blank.messages = [];
   activate(await createDraft(blank, '新對話'));
   render(); renderDrafts();
 });
