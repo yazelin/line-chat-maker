@@ -419,6 +419,10 @@ document.querySelectorAll('.tabs .tab').forEach((t) => t.addEventListener('click
   document.querySelectorAll('.pane').forEach((pn) => pn.classList.toggle('active', pn.id === 'pane-' + t.dataset.pane));
 }));
 // 聊天視窗內新增條
+$('#preview-toggle').addEventListener('click', () => {
+  const on = document.body.classList.toggle('previewing');
+  $('#preview-toggle').textContent = on ? '回編輯' : '預覽';
+});
 $('#chat-addbar').addEventListener('click', (e) => {
   const kind = e.target.dataset && e.target.dataset.add;
   if (!kind) return;
