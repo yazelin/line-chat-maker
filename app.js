@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, glowColor: '#96b9ff', darkUI: false, height: 'auto', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'auto', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -62,6 +62,7 @@ function render() {
   $('#set-buttons').checked = !!st.buttons;
   $('#set-homebar').checked = !!st.homebar;
   $('#set-watermark').checked = !!st.watermark;
+  $('#wm-preview').style.display = st.watermark ? '' : 'none';
   $('#set-clock').value = st.clock;
   $('#set-signal').value = st.signal; $('#signal-val').textContent = st.signal + '/4';
   $('#set-wifi').checked = !!st.wifi;
@@ -70,6 +71,16 @@ function render() {
   $('#set-glow').value = st.glow; $('#glow-val').textContent = st.glow;
   $('#set-glowcolor').value = st.glowColor || '#96b9ff';
   $('#set-darkui').checked = !!st.darkUI;
+  $('#set-backlight').value = st.backlight || 0; $('#backlight-val').textContent = st.backlight || 0;
+  $('#set-backcolor').value = st.backColor || '#06c755';
+  const bl = $('#backlight');
+  if (st.backlight > 0) {
+    const hx = (st.backColor || '#06c755').replace('#', '');
+    const r = parseInt(hx.slice(0, 2), 16), g = parseInt(hx.slice(2, 4), 16), b = parseInt(hx.slice(4, 6), 16);
+    const a1 = (st.backlight / 100 * 0.55).toFixed(2), a2 = (st.backlight / 100 * 0.24).toFixed(2);
+    bl.style.display = '';
+    bl.style.background = `radial-gradient(ellipse 55% 55% at 50% 50%, rgba(${r},${g},${b},${a1}) 0%, rgba(139,92,246,${a2}) 42%, transparent 72%)`;
+  } else { bl.style.display = 'none'; }
   document.body.classList.toggle('dark', !!st.darkUI);
   $('#set-height').value = st.height || 'auto';
   $('#set-heightpx').value = st.heightPx || 768;
@@ -269,13 +280,15 @@ $('#set-batttext').addEventListener('change', (e) => { state.settings.battText =
 $('#set-glow').addEventListener('input', (e) => { state.settings.glow = +e.target.value; save(); render(); });
 $('#set-glowcolor').addEventListener('input', (e) => { state.settings.glowColor = e.target.value; save(); render(); });
 $('#set-darkui').addEventListener('change', (e) => { state.settings.darkUI = e.target.checked; save(); render(); });
+$('#set-backlight').addEventListener('input', (e) => { state.settings.backlight = +e.target.value; save(); render(); });
+$('#set-backcolor').addEventListener('input', (e) => { state.settings.backColor = e.target.value; save(); render(); });
 $('#draft').addEventListener('input', () => { state.settings.draft = $('#draft').textContent; save(); });
 $('#set-announce').addEventListener('change', (e) => { state.settings.announceOn = e.target.checked; save(); render(); });
 $('#set-embplay').addEventListener('change', (e) => { state.settings.embedAutoplay = e.target.checked; save(); });
 $('#announce-text').addEventListener('input', () => { state.settings.announce = $('#announce-text').textContent; save(); });
 $('#set-bgimg').addEventListener('click', () => { bgTarget = true; $('#file-avatar').click(); });
 $('#clear-bgimg').addEventListener('click', () => { state.settings.bgImage = null; save(); render(); });
-$('#set-watermark').addEventListener('change', (e) => { state.settings.watermark = e.target.checked; save(); });
+$('#set-watermark').addEventListener('change', (e) => { state.settings.watermark = e.target.checked; save(); render(); });
 $('#set-clock').addEventListener('input', (e) => { state.settings.clock = e.target.value; save(); render(); });
 $('#set-height').addEventListener('change', (e) => { state.settings.height = e.target.value; save(); render(); });
 $('#set-mode').addEventListener('change', (e) => { state.settings.mode = e.target.value; save(); render(); });
@@ -326,15 +339,17 @@ $('#file-avatar').addEventListener('change', (e) => {
 
 // ── 匯出 PNG:SVG foreignObject 真渲染(與預覽像素一致);失敗時 html2canvas 備援 ──
 function cleanClone() {
-  const clone = $('#phone').cloneNode(true);
+  const clone = $('#phone-wrap').cloneNode(true);
+  const wmp = clone.querySelector('.wm-preview'); if (wmp) wmp.remove();
   clone.querySelectorAll('.ctl, .chat-addbar').forEach((n) => n.remove());
   clone.querySelectorAll('[contenteditable]').forEach((n) => n.removeAttribute('contenteditable'));
   return clone;
 }
 
 async function renderCanvasNative() {
-  const src = $('#phone');
-  const w = src.offsetWidth, h = src.offsetHeight, pad = 30, scale = 2;
+  const src = $('#phone-wrap');
+  const w = src.offsetWidth, h = src.offsetHeight, scale = 2;
+  const pad = state.settings.backlight > 0 ? 120 : 30;
   const css = await (await fetch('style.css')).text();
   const wrapEl = document.createElement('div');
   wrapEl.setAttribute('style', `--accent:#06c755;--fg:#1c1917;--muted:#6b6560;--border:#e5e2de;padding:${pad}px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC','Microsoft JhengHei',sans-serif;line-height:1.6;color:#1c1917;`);
@@ -355,7 +370,7 @@ async function renderCanvasNative() {
 }
 
 async function renderCanvasFallback() {
-  return html2canvas($('#phone'), {
+  return html2canvas($('#phone-wrap'), {
     scale: 2, backgroundColor: null, logging: false,
     onclone: (doc) => {
       doc.querySelectorAll('.ctl, .chat-addbar').forEach((n) => n.remove());

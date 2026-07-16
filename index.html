@@ -68,6 +68,8 @@
     <label>螢幕光暈 <input id="set-glow" type="range" min="0" max="100" step="5"> <span id="glow-val"></span></label>
     <label>光暈顏色 <input id="set-glowcolor" type="color"></label>
     <label class="row"><input id="set-darkui" type="checkbox"> 暗色工作區(光暈更明顯)</label>
+    <label>背光強度 <input id="set-backlight" type="range" min="0" max="100" step="5"> <span id="backlight-val"></span></label>
+    <label>背光顏色 <input id="set-backcolor" type="color"></label>
     </section>
 
     <section class="pane" id="pane-exportset">
@@ -86,6 +88,9 @@
   </aside>
 
   <section class="stage">
+    <div class="phone-wrap" id="phone-wrap">
+    <div class="phone-backlight" id="backlight"></div>
+    <div class="wm-preview" id="wm-preview">示意圖</div>
     <div id="phone" class="phone">
       <div class="sbtn vol1" data-hw></div><div class="sbtn vol2" data-hw></div><div class="sbtn pwr" data-hw></div>
       <div class="notch" id="notch" data-hw></div>
@@ -113,6 +118,7 @@
         <div class="inputbar" data-ui><span class="plus">＋</span><span class="fakein" id="draft" contenteditable data-ph="Aa"></span><svg viewBox="0 0 24 24" width="18" height="18" fill="#8a8a8a" aria-hidden="true"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2z"/></svg></div>
         <div class="homebar" data-ui><span></span></div>
       </div>
+    </div>
     </div>
       <div class="chat-addbar" id="chat-addbar">
         <button data-add="left">+ 他人</button><button data-add="right">+ 我</button><button data-add="image">圖片</button><button data-add="sticker">貼圖</button><button data-add="voice">語音</button><button data-add="file">檔案</button><button data-add="skip">(略)</button><button data-add="date">日期</button><button data-add="play" class="playbtn">▶ 播放</button><button id="preview-toggle">預覽</button>
