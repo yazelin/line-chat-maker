@@ -97,18 +97,17 @@ function render() {
 }
 
 function bubble(m) {
-  const p = el('p'); p.contentEditable = true;
+  const p = el('div', 'bubble');
   if (m.quote) {
-    const q = el('span', 'q'); q.contentEditable = false;
-    const nm = el('strong'); nm.contentEditable = true; nm.textContent = m.quote.name;
-    nm.addEventListener('input', () => { m.quote.name = nm.textContent; save(); });
+    const q = el('div', 'q');
+    const nm = el('strong'); const nmt = el('span'); nmt.contentEditable = true; nmt.textContent = m.quote.name;
+    nmt.addEventListener('input', () => { m.quote.name = nmt.textContent; save(); }); nm.appendChild(nmt);
     const qt = el('span'); qt.contentEditable = true; qt.textContent = m.quote.text;
     qt.addEventListener('input', () => { m.quote.text = qt.textContent; save(); });
     q.appendChild(nm); q.appendChild(qt); p.appendChild(q);
   }
-  const txt = el('span'); txt.contentEditable = true; txt.textContent = m.text;
-  txt.addEventListener('input', () => { m.text = txt.textContent; save(); });
-  p.contentEditable = false;
+  const txt = el('div', 'btxt'); const ts = el('span'); ts.contentEditable = true; ts.textContent = m.text;
+  ts.addEventListener('input', () => { m.text = ts.textContent; save(); }); txt.appendChild(ts);
   p.appendChild(txt);
   return p;
 }
@@ -176,7 +175,7 @@ $('#export-png').addEventListener('click', async () => {
   if (state.settings.watermark) {
     const ctx = canvas.getContext('2d');
     ctx.font = `${Math.round(canvas.width / 30)}px sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fillStyle = 'rgba(0,0,0,0.38)';
     ctx.textAlign = 'right';
     ctx.fillText('示意圖', canvas.width - 14, canvas.height - 14);
   }
