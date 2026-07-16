@@ -205,7 +205,7 @@ body.previewing .radd { display: none !important; }
 
 /* LINE AI 懸浮鈕(畫面的一部分,匯出/嵌入包含) */
 .phone .screen { position: relative; }
-.phone .ai-fab { position: absolute; right: 12px; bottom: 66px; width: 32px; height: 32px; border: 4px solid rgba(74, 80, 88, 0.92); border-radius: 50%; background: #d7dade; color: #4a5058; font-weight: 800; font-size: 10px; display: flex; align-items: center; justify-content: center; z-index: 4; letter-spacing: 0; }
+.phone .ai-fab { position: absolute; right: 12px; bottom: 66px; width: 32px; height: 32px; border: 5px solid rgba(74, 80, 88, 0.92); border-radius: 50%; background: #d7dade; color: #4a5058; font-weight: 900; font-size: 10px; -webkit-text-stroke: 0.3px #4a5058; display: flex; align-items: center; justify-content: center; z-index: 4; letter-spacing: 0; }
 
 /* ── 系統列(單一套手繪 icon,顏色由「系統顏色」設定,JS 以亮度自動配黑/白前景) ── */
 .phone .sicons-android { display: inline-flex; align-items: center; gap: 4.5px; }
