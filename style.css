@@ -53,7 +53,8 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "N
 .linehead .back { font-size: 1.3rem; line-height: 1; }
 .linehead .htitle { flex: 1; font-weight: 600; }
 .linehead .hmembers { font-weight: 400; opacity: 0.7; margin-left: 0.25rem; }
-.inputbar { display: flex; align-items: center; gap: 0.6rem; background: #fff; padding: 0.4rem 0.8rem 0.3rem; color: #555; }
+.inputbar { position: relative; display: flex; align-items: flex-end; gap: 0.6rem; background: #fff; padding: 0.4rem 0.8rem 0.3rem; color: #555; }
+.inputbar > .plus, .inputbar > svg { margin-bottom: 5px; } /* 多行時 icon 貼底(LINE 行為),補一點視覺置中 */
 .inputbar .plus { font-size: 1.1rem; color: #8a8a8a; }
 .inputbar .fakein { flex: 1; min-width: 0; background: #f1f0ee; border-radius: 18px; padding: 0.2rem 0.8rem; color: #999; white-space: pre-wrap; word-break: break-word; overflow-wrap: anywhere; }
 
@@ -205,14 +206,14 @@ body.previewing .radd { display: none !important; }
 
 /* LINE AI 懸浮鈕(畫面的一部分,匯出/嵌入包含) */
 .phone .screen { position: relative; }
-.phone .ai-fab { position: absolute; right: 12px; bottom: 66px; width: 32px; height: 32px; border: 5px solid rgba(74, 80, 88, 0.92); border-radius: 50%; background: #d7dade; color: #4a5058; font-weight: 900; font-size: 10px; -webkit-text-stroke: 0.3px #4a5058; display: flex; align-items: center; justify-content: center; z-index: 4; letter-spacing: 0; }
+.phone .ai-fab { position: absolute; right: 12px; bottom: calc(100% + 10px); width: 32px; height: 32px; border: 5px solid rgba(74, 80, 88, 0.92); border-radius: 50%; background: #d7dade; color: #4a5058; font-weight: 900; font-size: 10px; -webkit-text-stroke: 0.3px #4a5058; display: flex; align-items: center; justify-content: center; z-index: 4; letter-spacing: 0; }
 
 /* ── 系統列(單一套手繪 icon,顏色由「系統顏色」設定,JS 以亮度自動配黑/白前景) ── */
 .phone .sicons-android { display: inline-flex; align-items: center; gap: 4.5px; }
 .phone .hicons-android { display: inline-flex; align-items: center; gap: 15px; }
 .phone .inputbar .in-a { display: inline-block; }
 .phone .inputbar .in-smile { margin-left: -30px; margin-right: 2px; position: relative; z-index: 1; }
-.phone .inputbar .fakein { padding-right: 34px; border-radius: 999px; }
+.phone .inputbar .fakein { padding-right: 34px; border-radius: 18px; } /* 定值=單行高一半:單行看是膠囊,多行自然變圓角矩形(LINE 行為) */
 .phone.mode-group .h-call, .phone.mode-group .h-cal { display: none; }
 .phone.mode-dm .h-bub { display: none; }
 .phone .statusbar { font-weight: 500; }
