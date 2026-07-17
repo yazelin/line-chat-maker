@@ -97,6 +97,7 @@ schema 重點:
 規則:
 - 一律使用繁體中文(zh-TW)回覆。
 - 收到任務直接用工具完成,不要反問、不要只給建議或範例;改完用一句話回報結果。
+- 填入大量訊息時務必分批:先用 apply_script 放 settings、people 與前幾則訊息,之後用 append_messages 每批最多 8 則補完;單次工具參數過長容易格式出錯。
 - 對話內容要自然口語像真人閒聊,每個人物講話風格一致;適度用貼圖、已讀、時間差說故事。
 - @imgN 代表既有圖片:要沿用就原樣保留;不可發明不存在的 @imgN;新的 image/sticker 訊息 img 給 null(顯示佔位圖)。
 - 僅供創作示意(部落格配圖、教學、行銷素材);拒絕製作用於詐騙、毀謗、偽造證據的內容。`;
@@ -215,7 +216,14 @@ async function runAgent(prompt, screenplay, quick) {
   const loopLimit = Math.min(50, Math.max(3, +cfg().loops || 10)); // 每按一次「開始製作」重新起算
   try {
     for (let step = 1; step <= loopLimit; step++) {
-      const m = await chat(msgs, force);
+      let m;
+      for (let attempt = 1; ; attempt++) { // 模型偶爾把工具參數 JSON 寫壞(長輸出常見),重取樣重試
+        try { m = await chat(msgs, force); break; }
+        catch (e) {
+          if (e.name === 'AbortError' || attempt >= 3 || !/parse|json|failed_generation|tool call/i.test(e.message)) throw e;
+          log(`模型工具參數格式錯誤,重試(${attempt}/2)`, 'warn');
+        }
+      }
       force = false;
       msgs.push(m);
       const calls = Array.isArray(m.tool_calls) ? m.tool_calls : [];
