@@ -1,4 +1,4 @@
-# lcm-ai-proxy — 免費體驗代理（「刷作者的信用卡」）
+# lcm-ai-proxy — 免費體驗代理（「刷亞澤的信用卡」）
 
 讓 line-chat-maker 的訪客不用申請 API Key 就能體驗 AI 功能：前端打這個 Cloudflare Worker，Worker 拿站長的 Groq Key 轉發。**Key 只存在 Cloudflare secret，絕不出現在前端。**
 
@@ -20,7 +20,7 @@ npx wrangler secret put GROQ_API_KEY   # 貼上你的 Groq API Key
 npx wrangler deploy
 ```
 
-部署後網址即 `https://lcm-ai-proxy.<你的子網域>.workers.dev`，前端連線設定的「刷作者的信用卡」preset 指向它。
+部署後網址即 `https://lcm-ai-proxy.<你的子網域>.workers.dev`，前端連線設定的「刷亞澤的信用卡」preset 指向它。
 
 之後改 `worker/` 內容 push 到 master 會由 GitHub Actions 自動部署（需在 repo secrets 設 `CLOUDFLARE_API_TOKEN`，權限含 Workers 編輯；沒設 secret 就手動 `npx wrangler deploy`）。
 
