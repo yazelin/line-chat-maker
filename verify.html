@@ -21,9 +21,9 @@
 </head>
 <body>
 <h1>圖片識別標記驗證</h1>
-<p>檢查一張圖是否由 <a href="./">LINE 對話製造機</a> 匯出。工具匯出的 PNG 帶三層標記：檔案 metadata、像素藏碼、隱形場紋。場紋在截圖、轉檔、重壓縮、裁切後仍可統計驗出（縮放後不保證）。圖片只在你的瀏覽器本機分析，不會上傳。</p>
-<div id="drop">把圖片拖到這裡，或點擊選檔</div>
-<input id="file" type="file" accept="image/*" hidden>
+<p>檢查一張圖或一支影片是否由 <a href="./">LINE 對話製造機</a> 匯出。匯出的 PNG 帶三層標記（檔案 metadata、像素藏碼、隱形場紋）；匯出的 MP4 每一幀都帶隱形場紋，驗證時多幀平均後統計比對。場紋在截圖、轉檔、重壓縮、裁切後仍可驗出（縮放後不保證）。檔案只在你的瀏覽器本機分析，不會上傳。</p>
+<div id="drop">把圖片或影片拖到這裡，或點擊選檔</div>
+<input id="file" type="file" accept="image/*,video/*" hidden>
 <div id="out"></div>
 <p class="hint">「未檢出」不代表圖是真的對話截圖：別的工具、修圖軟體做的假圖這裡驗不出來。這個驗證只回答一件事：這張圖是不是本工具匯出的示意圖。</p>
 <details class="theory">
@@ -177,13 +177,59 @@ async function check(file) {
   </table>
   <p>${anyHit ? '<strong>這張圖帶有 LINE 對話製造機的識別標記，是本工具產生的示意圖，不是真實對話截圖。</strong>' : '未檢出本工具的標記。注意：這不代表圖是真的，只代表不是（或已無法辨識為）本工具匯出的。'}</p>`;
 }
+async function checkVideo(file) { // 影片:場紋逐幀相同,H.264 雜訊逐幀近獨立 → 多幀平均把雜訊壓 √N 倍,場紋不動
+  const out = document.getElementById('out');
+  out.innerHTML = '<p>分析影片中…（解碼取樣多幀平均）</p>';
+  const v = document.createElement('video');
+  v.src = URL.createObjectURL(new Blob([await file.arrayBuffer()]));
+  v.muted = true; v.playsInline = true;
+  try {
+    await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = () => rej(new Error('無法讀取此影片')); });
+  } catch (e) { out.innerHTML = `<p class="no">${esc(e.message)}</p>`; return; }
+  const W = v.videoWidth, H = v.videoHeight;
+  if (!('requestVideoFrameCallback' in HTMLVideoElement.prototype)) {
+    out.innerHTML = '<p class="no">此瀏覽器無法逐幀取樣影片（需支援 requestVideoFrameCallback，建議 Chrome / Edge）。圖片驗證不受影響。</p>';
+    return;
+  }
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  const acc = new Float64Array(W * H * 4);
+  const MAX = 60; // 實測 60 幀平均已遠超門檻(見 docs);單幀其實就過,平均只是加保險
+  let n = 0;
+  v.playbackRate = 4;
+  await new Promise((res) => {
+    let done = false; const finish = () => { if (!done) { done = true; res(); } };
+    const step = () => {
+      ctx.drawImage(v, 0, 0, W, H);
+      const d = ctx.getImageData(0, 0, W, H).data;
+      for (let i = 0; i < acc.length; i++) acc[i] += d[i];
+      if (++n >= MAX || v.ended) return finish();
+      v.requestVideoFrameCallback(step);
+    };
+    v.onended = finish;
+    v.requestVideoFrameCallback(step);
+    v.play().catch(finish);
+  });
+  v.pause();
+  if (n === 0) { out.innerHTML = '<p class="no">無法從影片取得畫面。</p>'; return; }
+  const avg = new Uint8ClampedArray(acc.length);
+  for (let i = 0; i < acc.length; i++) avg[i] = Math.round(acc[i] / n);
+  const pat = detectPattern(avg, W, H);
+  const row = (name, hit, detail) => `<tr><td>${name}</td><td><span class="${hit ? 'ok' : 'no'}">${hit ? '檢出' : '未檢出'}</span> ${detail}</td></tr>`;
+  out.innerHTML = `<table>
+    ${row('隱形場紋（影片）', pat.found, `<span class="hint">平均 ${n} 幀後 z=${pat.z.toFixed(1)}（門檻 7）;重壓縮、平台轉檔後仍可驗,縮放後不保證</span>`)}
+  </table>
+  <p class="hint">影片沒有 PNG 的檔案 metadata 與像素藏碼兩層(編碼會抹掉),只靠隱形場紋。</p>
+  <p>${pat.found ? '<strong>這支影片帶有 LINE 對話製造機的識別標記，是本工具產生的示意內容，不是真實對話畫面。</strong>' : '未檢出本工具的標記。注意：這不代表影片是真的，只代表不是（或已無法辨識為）本工具匯出的。'}</p>`;
+}
+function route(file) { return (file.type && file.type.startsWith('video/')) ? checkVideo(file) : check(file); }
 function esc(s) { return s.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch])); }
 const drop = document.getElementById('drop'), fi = document.getElementById('file');
 drop.addEventListener('click', () => fi.click());
-fi.addEventListener('change', () => fi.files[0] && check(fi.files[0]));
+fi.addEventListener('change', () => fi.files[0] && route(fi.files[0]));
 drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
 drop.addEventListener('dragleave', () => drop.classList.remove('over'));
-drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); e.dataTransfer.files[0] && check(e.dataTransfer.files[0]); });
+drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); e.dataTransfer.files[0] && route(e.dataTransfer.files[0]); });
 </script>
 </body>
 </html>
