@@ -221,13 +221,20 @@ async function runAgent(prompt, screenplay, quick) {
     { role: 'user', content: '目前腳本 JSON:\n' + JSON.stringify(strip(scriptOf())) + '\n\n' + task },
   ];
   const loopLimit = Math.min(50, Math.max(3, +cfg().loops || 10)); // 每按一次「開始製作」重新起算
+  let allowForce = true; // 推理模型偶爾在 required 下硬回文字,Groq 直接 400;降級 auto+反偷懶訊息驅動
   try {
     for (let step = 1; step <= loopLimit; step++) {
       let m;
       for (let attempt = 1; ; attempt++) { // 模型偶爾把工具參數 JSON 寫壞(長輸出常見),重取樣重試
-        try { m = await chat(msgs, force); break; }
+        try { m = await chat(msgs, force && allowForce); break; }
         catch (e) {
-          if (e.name === 'AbortError' || attempt >= 3 || !/parse|json|failed_generation|tool call/i.test(e.message)) throw e;
+          if (e.name === 'AbortError') throw e;
+          if (allowForce && /did not call a tool|tool_choice/i.test(e.message)) {
+            allowForce = false;
+            log('模型拒絕強制工具呼叫,改用引導模式重試', 'warn');
+            continue;
+          }
+          if (attempt >= 3 || !/parse|json|failed_generation|tool call/i.test(e.message)) throw e;
           log(`模型工具參數格式錯誤,重試(${attempt}/2)`, 'warn');
         }
       }
