@@ -1,4 +1,4 @@
-/* lcm-ai-proxy:line-chat-maker 的免費體驗代理(「刷作者的信用卡」)
+/* lcm-ai-proxy:line-chat-maker 的免費體驗代理(「刷亞澤的信用卡」)
    Groq key 只存在 Cloudflare secret,絕不進前端。
    五道閘:Origin 白名單 / model 鎖定+請求形狀 / 每 IP 每日額度 / 全站每日熔斷 / max_tokens 上限。
    自架:見同目錄 README.md。 */
@@ -50,7 +50,7 @@ export default {
       await env.DB.exec('CREATE TABLE IF NOT EXISTS lcm_quota (day TEXT NOT NULL, ip TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, ip))');
       counts = await bump(env.DB, day, ip);
     }
-    if (counts.global > globalLimit) return err(429, '今天全站的免費體驗額度被大家用完了(作者的信用卡在冒煙)。明天再來,或到連線設定填自己的 Groq API Key(免費申請,額度歸你)。');
+    if (counts.global > globalLimit) return err(429, '今天全站的免費體驗額度被大家用完了(亞澤的信用卡在冒煙)。明天再來,或到連線設定填自己的 Groq API Key(免費申請,額度歸你)。');
     if (counts.ip > ipLimit) return err(429, `你今天的免費體驗額度用完了(每天 ${ipLimit} 次 AI 呼叫,約 3 個作品)。想繼續:連線設定填自己的 Groq API Key(免費申請)。`);
 
     // 鎖定 model 與欄位:這不是萬用 LLM 代理

@@ -5,7 +5,7 @@
 
 // ── 連線設定(只存 localStorage,絕不進 state:草稿與分享連結不能帶到 API key) ──
 const PROVIDERS = {
-  free: { label: '刷作者的信用卡(免費體驗,每日限量)', base: 'https://lcm-ai-proxy.yazelinj303.workers.dev', model: 'openai/gpt-oss-120b', keyless: true }, // 代理 worker 見 repo worker/;額度用完會引導填自己的 key
+  free: { label: '刷亞澤的信用卡(免費體驗,每日限量)', base: 'https://lcm-ai-proxy.yazelinj303.workers.dev', model: 'openai/gpt-oss-120b', keyless: true }, // 代理 worker 見 repo worker/;額度用完會引導填自己的 key
   groq: { label: 'Groq', base: 'https://api.groq.com/openai/v1', model: 'openai/gpt-oss-120b' }, // 2026-07 實測:工具呼叫最穩+繁中最乾淨(qwen3 會捏造 @imgN)
   openai: { label: 'OpenAI', base: 'https://api.openai.com/v1', model: 'gpt-5-mini' },
   gemini: { label: 'Gemini', base: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash' },
