@@ -829,3 +829,5 @@ $('#chat-addbar').addEventListener('click', (e) => {
 
 boot();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+// footer 版本號:從 sw.js 的 cache 版名讀(單一事實來源),診斷「拿到新版沒」用
+fetch('sw.js').then((r) => r.text()).then((s) => { const m = s.match(/lcm-v(\d+)/); if (m) $('#app-ver').textContent = ' v' + m[1]; }).catch(() => {});
