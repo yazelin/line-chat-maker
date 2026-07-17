@@ -699,8 +699,7 @@ $('#export-mp4').addEventListener('click', async () => {
   const draftText = state.settings.draft || '';
   try {
     _exportCss = null;
-    // 尺寸鎖定:量「完整草稿」狀態的大小,打字過程用 minHeight 撐住輸入列,整片影片同一解析度
-    const draftH = draftEl.offsetHeight;
+    // 解析度量「完整草稿」狀態(最高版面);打字過程輸入列從單行自然長高,不預先撐高
     const src = $('#phone-wrap');
     const st = state.settings;
     let pad = 44;
@@ -712,7 +711,7 @@ $('#export-mp4').addEventListener('click', async () => {
     const W = Math.floor(rawW * scale / 2) * 2, H = Math.floor(rawH * scale / 2) * 2;
     // 時序表(與播放一致):開場停 0.8s → 每則 0.65s → 停 0.7s → 草稿 75ms/字 → 收尾 1.5s
     // 訊息步只回報「要捲多少」,實際捲動交給幀迴圈內插成平滑動畫
-    const steps = [{ hold: 800, apply() { nodes.forEach((n) => { n.style.visibility = 'hidden'; n.classList.remove('appear'); }); if (draftText) { draftEl.style.minHeight = draftH + 'px'; draftEl.textContent = ''; } chatEl.scrollTop = 0; } }];
+    const steps = [{ hold: 800, apply() { nodes.forEach((n) => { n.style.visibility = 'hidden'; n.classList.remove('appear'); }); if (draftText) draftEl.textContent = ''; chatEl.scrollTop = 0; } }];
     nodes.forEach((n) => steps.push({ hold: 650, bubble: n, apply() {
       n.style.visibility = '';
       const nb = n.getBoundingClientRect(), cb = chatEl.getBoundingClientRect();
@@ -779,7 +778,6 @@ $('#export-mp4').addEventListener('click', async () => {
     console.warn('MP4 匯出失敗', e);
     alert('MP4 匯出失敗:' + ((e && e.message) || e));
   }
-  draftEl.style.minHeight = '';
   btn.disabled = false;
   btn.textContent = oldLabel;
   render();
