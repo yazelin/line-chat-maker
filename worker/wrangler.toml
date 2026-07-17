@@ -1,0 +1,23 @@
+# lcm-ai-proxy:免費體驗代理。部署與自架步驟見 README.md
+name = "lcm-ai-proxy"
+main = "index.js"
+compatibility_date = "2025-01-01"
+
+[vars]
+# 只服務這些 Origin(逗號分隔);自架請改成你的網域
+ALLOWED_ORIGINS = "https://yazelin.github.io"
+# 鎖定的 model(不接受前端指定其他 model)
+MODEL = "openai/gpt-oss-120b"
+# 每 IP 每日 AI 呼叫上限(約 20 次=1 個完整作品)
+IP_DAILY = "60"
+# 全站每日熔斷:成本天花板 = GLOBAL_DAILY x 單次呼叫成本(粗估每日上限 1200 次 ≈ US$1.2)
+GLOBAL_DAILY = "1200"
+
+# 額度計數用 D1(沿用既有庫,只新增 lcm_quota 表;自架請換成自己的庫)
+[[d1_databases]]
+binding = "DB"
+database_name = "k-rider-signups"
+database_id = "843337b7-ef58-4e6a-8e12-759e5d5b379c"
+
+# GROQ_API_KEY 走 secret,不放這裡:
+#   cd worker && npx wrangler secret put GROQ_API_KEY
