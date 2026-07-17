@@ -155,6 +155,7 @@
     <label class="row"><input id="set-embplay" type="checkbox"> 嵌入時自動播放(捲到看見處,訊息依序出現)</label>
     <div class="addbar">
       <button id="export-png" class="primary">匯出 PNG</button>
+      <button id="export-mp4" title="把播放動畫(含結尾草稿打字)離線編碼成 MP4 影片;需 Chrome/Edge">匯出 MP4</button>
       <button id="export-html">嵌入HTML</button>
       <button id="share-link">複製分享連結</button>
       <button id="export-json">匯出腳本 JSON</button>
@@ -243,6 +244,7 @@
 <input type="file" id="file-avatar" accept="image/*" hidden>
 <input type="file" id="file-json" accept="application/json" hidden>
 <script src="vendor/html2canvas.min.js"></script>
+<script src="vendor/mp4-muxer.min.js"></script>
 <script src="app.js"></script>
 <script src="ai.js"></script>
 <!-- yz-promo-footer v8 | 三件套+BMC 注意力效果 | https://github.com/yazelin/promo-footer-skill -->
