@@ -248,3 +248,13 @@ body.previewing .radd { display: none !important; }
 .ai-log .err { border-left-color: #d33a2f; color: #b3261e; }
 body.dark .panel label textarea, body.dark .panel input[type=password] { background: #1f2126; border-color: #33363c; color: #e5e2de; }
 body.dark .ai-log .prompt, body.dark .ai-log .done { color: #e5e2de; }
+
+/* ── AI 微調列(預覽正下方,直改目前畫面) ── */
+.ai-quickbar { display: flex; gap: 0.4rem; width: 100%; max-width: 24rem; }
+.ai-quickbar input { flex: 1; min-width: 0; padding: 0.45rem 0.6rem; border: 1px solid var(--border); border-radius: 8px; font-size: 0.85rem; }
+.ai-quickbar button { border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 0.35rem 0.7rem; font-size: 0.85rem; cursor: pointer; white-space: nowrap; }
+.ai-quickbar button:hover { border-color: var(--accent); color: var(--accent); }
+.ai-quickbar button:disabled { opacity: 0.45; cursor: not-allowed; }
+body.previewing .ai-quickbar { display: none; }
+body.dark .ai-quickbar input { background: #1f2126; border-color: #33363c; color: #e5e2de; }
+body.dark .ai-quickbar button { background: #1f2126; border-color: #33363c; color: #e5e2de; }
