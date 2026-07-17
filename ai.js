@@ -101,6 +101,30 @@ schema 重點:
 - @imgN 代表既有圖片:要沿用就原樣保留;不可發明不存在的 @imgN;新的 image/sticker 訊息 img 給 null(顯示佔位圖)。
 - 僅供創作示意(部落格配圖、教學、行銷素材);拒絕製作用於詐騙、毀謗、偽造證據的內容。`;
 
+// ── 編劇/評審(創意與執行分離:編劇寫劇本→評審打分及格→執行 AI 只負責詳實填入) ──
+const WRITER_SYSTEM = `你是資深編劇,專為「LINE 對話截圖」這種形式寫劇本。這個形式的武器庫:
+- 已讀不回(read 欄+下一則的時間差)、時間跳躍、日期分隔、「(略)」省略分隔
+- 貼圖/圖片訊息、引用回覆(quote)、表情回應(react)、語音/檔案訊息
+- 輸入框草稿(draft=打了沒送出的話,強力的結尾武器)、置頂公告、聊天室名稱與 1對1/群組的選擇
+寫出完整劇本,包含:
+1. 角色設定:每人的個性、說話習慣(語助詞/標點/長短句)
+2. 逐則對話:誰說/內容/時間(照「下午4:06」慣例遞增)/已讀狀態/用到的形式武器
+3. 標註高潮與轉折點在哪一則
+只輸出劇本文字,劇情要有起因、升溫、高潮、收尾;對話像真人打字。`;
+const CRITIC_SYSTEM = `你是嚴格的 LINE 對話劇本評審。對劇本五項評分,各 0-10:
+1 arc 劇情弧(起因→升溫→高潮→收尾完整) 2 voice 角色聲音(口氣一致且彼此區分)
+3 form 形式運用(已讀不回/時間差/日期分隔/貼圖/引用/react/draft 至少巧用三種且服務劇情)
+4 pacing 節奏(留白與密集交錯,高潮前有鋪陳) 5 real 真實感(像真人打字的口語與短句)
+只回傳 JSON:{"scores":{"arc":n,"voice":n,"form":n,"pacing":n,"real":n},"total":n,"pass":true|false,"feedback":"具體可執行的修改指示"}
+pass 條件:total>=40 且每項>=6。`;
+const IDEAS = [
+  ['情侶吵架和好', '做一段情侶吵架和好的對話:起因是忘記紀念日,中段冷戰已讀不回,最後用一句笨拙的道歉加貼圖破冰,劇情高潮迭起'],
+  ['媽媽的傘', '媽媽提醒兒子帶傘,兒子敷衍已讀不回,傍晚淋成落湯雞才回頭示弱,媽媽只回一句話,溫馨收尾'],
+  ['群組甩鍋大戰', '同事群組甩鍋:專案出包大家互推責任,講到一半主管突然冒出來全場安靜,結尾有人話打在輸入框不敢送出'],
+  ['深夜曖昧', '曖昧對象深夜聊天,話題從廢話越聊越靠近告白,時間越來越晚,最後那句最重要的話停在輸入框沒送出'],
+  ['露營棄坑', '揪團週末露營:從熱血規劃到成員一個個找藉口棄坑,用日期分隔跨三天,最後只剩兩個人硬著頭皮成行'],
+];
+
 const REVIEW_MESSAGE = `自審清單,逐項檢查剛才的修改:
 1) 使用者任務與你補齊的規格是否完整達成?劇情有起因、轉折、收尾?
 2) 每個人物口氣前後一致、像真人?
@@ -113,13 +137,17 @@ const REVIEW_MESSAGE = `自審清單,逐項檢查剛才的修改:
 let aborter = null;
 let aiSnapshot = null;
 
-async function chat(msgs, force) {
+async function chat(msgs, force, noTools) {
   const c = cfg();
   const res = await fetch(c.base.replace(/\/+$/, '') + '/chat/completions', {
     method: 'POST',
     signal: aborter.signal,
     headers: { 'content-type': 'application/json', ...(c.key ? { authorization: 'Bearer ' + c.key } : {}) },
-    body: JSON.stringify({ model: c.model, messages: msgs, tools: TOOL_DEFS.map((t) => ({ type: 'function', function: t })), tool_choice: force ? 'required' : 'auto' }),
+    body: JSON.stringify({
+      model: c.model,
+      messages: msgs,
+      ...(noTools ? {} : { tools: TOOL_DEFS.map((t) => ({ type: 'function', function: t })), tool_choice: force ? 'required' : 'auto' }),
+    }),
   });
   const d = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error((d.error && d.error.message) || d.message || 'HTTP ' + res.status);
@@ -128,14 +156,49 @@ async function chat(msgs, force) {
   return m;
 }
 
+function textOf(m) { return (typeof m.content === 'string' ? m.content : '').trim(); }
+
+async function writeScreenplay(prompt) { // 編劇→評審迴圈,及格(或 3 輪取最佳)才放行
+  log('編劇撰寫劇本中…');
+  const wmsgs = [{ role: 'system', content: WRITER_SYSTEM }, { role: 'user', content: '需求:' + prompt }];
+  let best = { script: '', total: -1 };
+  for (let round = 1; round <= 3; round++) {
+    const script = textOf(await chat(wmsgs, false, true));
+    if (!script) break;
+    wmsgs.push({ role: 'assistant', content: script });
+    let verdict = null;
+    try {
+      const raw = textOf(await chat([{ role: 'system', content: CRITIC_SYSTEM }, { role: 'user', content: script }], false, true));
+      verdict = JSON.parse((raw.match(/\{[\s\S]*\}/) || ['{}'])[0]);
+    } catch (e) {}
+    if (!verdict || typeof verdict.total !== 'number') { log('評審回覆無法解析,採用目前劇本', 'warn'); return script; }
+    if (verdict.total > best.total) best = { script, total: verdict.total };
+    if (verdict.pass) { log(`劇本評分 ${verdict.total}/50,通過`, 'done'); return script; }
+    log(`劇本評分 ${verdict.total}/50 未達標(第 ${round}/3 輪):${String(verdict.feedback || '').slice(0, 80)}`, 'warn');
+    if (round < 3) wmsgs.push({ role: 'user', content: '評審未通過(' + verdict.total + '/50)。依以下意見改寫整份劇本:\n' + (verdict.feedback || '') });
+  }
+  log(`三輪未達標,採用最高分劇本(${best.total}/50)`, 'warn');
+  return best.script;
+}
+
 async function runAgent(prompt) {
   imgRegistry = [];
   const before = structuredClone(scriptOf());
   aborter = new AbortController();
   let mutated = false, usedTool = false, force = true;
+  let task = '使用者任務:' + prompt;
+  try {
+    if ($('#ai-screenplay').checked) {
+      const screenplay = await writeScreenplay(prompt);
+      if (screenplay) {
+        task = '使用者原始需求:' + prompt + '\n\n以下是已通過評審的劇本,你的工作是把它詳實填入腳本 JSON(settings/people/messages),忠於劇本的每一則對話、時間、已讀與形式安排,不要自行改劇情:\n' + screenplay;
+        log('劇本定稿,開始填入對話…');
+      }
+    }
+  } catch (e) { if (e.name === 'AbortError') { aborter = null; throw e; } log('編劇階段失敗,改為直接執行:' + e.message, 'warn'); }
   const msgs = [
     { role: 'system', content: SYSTEM },
-    { role: 'user', content: '目前腳本 JSON:\n' + JSON.stringify(strip(scriptOf())) + '\n\n使用者任務:' + prompt },
+    { role: 'user', content: '目前腳本 JSON:\n' + JSON.stringify(strip(scriptOf())) + '\n\n' + task },
   ];
   const loopLimit = Math.min(50, Math.max(3, +cfg().loops || 15));
   try {
@@ -210,6 +273,7 @@ function fillCfgForm() {
   $('#ai-model').value = c.model || '';
   $('#ai-key').value = c.key || '';
   $('#ai-loops').value = Math.min(50, Math.max(3, +c.loops || 15));
+  $('#ai-screenplay').checked = c.screenplay !== false;
   updateGate();
 }
 function setBusy(on) {
@@ -243,6 +307,18 @@ $('#ai-undo').addEventListener('click', () => {
   save(); render(); toast('已還原到 AI 修改前');
 });
 $('#ai-prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#ai-run').click(); });
+$('#ai-screenplay').addEventListener('change', (e) => saveCfg({ ...cfg(), screenplay: e.target.checked }));
+$('#ai-new-draft').addEventListener('click', () => { // 借用草稿頁的既有邏輯,AI 快照一併作廢
+  aiSnapshot = null; $('#ai-undo').hidden = true;
+  $('#draft-new').click();
+  toast('已開新草稿,AI 會在這份上創作');
+});
+for (const [label, idea] of IDEAS) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.textContent = label; b.title = idea;
+  b.addEventListener('click', () => { $('#ai-prompt').value = idea; $('#ai-prompt').focus(); });
+  $('#ai-ideas').appendChild(b);
+}
 window.addEventListener('online', updateGate);
 window.addEventListener('offline', updateGate);
 fillCfgForm();
