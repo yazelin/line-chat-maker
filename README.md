@@ -17,12 +17,17 @@
 - 畫面高度兩種：依訊息內容，或固定高度（px 可調，訊息貼底像真的聊天室）
 - 一鍵匯出 PNG（2x 解析度）；「嵌入」複製一段 scoped HTML，貼進部落格/CMS 直接顯示；「示意圖」浮水印可開關
 - 對話腳本 JSON 匯入/匯出：存檔、分享，或讓 AI 直接生成整段對話
+- **內建 AI 助手**：「AI」分頁下指令（例：生成一段媽媽提醒兒子帶傘的對話），AI 直接改畫面，可一鍵還原；自帶 API Key（Groq/OpenAI/Gemini/OpenRouter/Ollama/自訂）
 - 多草稿：創作自動即時保存在本機（IndexedDB）；開別人的分享連結或匯入 JSON 會開成**新草稿**，不會覆蓋你的創作
 - PWA：安裝後飛航模式照用
 
 ## AI 也能用
 
-repo 內附 [skills/line-chat-maker/SKILL.md]（skills/line-chat-maker/SKILL.md）：給 AI Agent 的腳本 JSON schema 與交付方式（檔案匯入/`#s=` 一鍵連結/Playwright 自動匯出）。把 skill 目錄 symlink 進你的 agent skills 資料夾即可。
+三條路，同一份腳本 JSON：
+
+1. **內建 AI 助手**（`ai.js`）：網頁「AI」分頁直接下指令。工具對到 app 的 state 操作（`get_script`/`apply_script`/`append_messages`/`export_png`），OpenAI 相容 tool-calling 迴圈（首輪強制工具＋反偷懶＋迴圈上限），圖片以 `@imgN` 佔位符進出模型不會弄丟。執行前自動快照，可一鍵還原。設定與 Key 只存 localStorage。
+2. **WebMCP**：同一組工具會註冊到 `navigator.modelContext`（瀏覽器支援才生效），ZeroType Agent 等 WebMCP-aware 的 agent 擴充套件可直接以結構化工具操作本頁，不必戳 DOM。
+3. **外部 Agent skill**：repo 內附 [skills/line-chat-maker/SKILL.md](skills/line-chat-maker/SKILL.md)：腳本 JSON schema 與交付方式（檔案匯入/`#s=` 一鍵連結/Playwright 自動匯出）。把 skill 目錄 symlink 進你的 agent skills 資料夾即可。
 
 ## 本機開發
 

@@ -235,3 +235,16 @@ body.previewing .radd { display: none !important; }
 .phone.theme-dark .line-chat .voice .vbars i { background: #9aa0a6; }
 .phone.theme-dark .announce { background: rgba(18, 20, 24, 0.82); color: #c9ced4; border-bottom-color: rgba(255, 255, 255, 0.05); }
 .phone.theme-dark .announce .achev { color: #8a8f96; }
+
+/* ── AI 助手面板 ── */
+.panel label textarea { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; font-family: inherit; resize: vertical; }
+.addbar button:disabled { opacity: 0.45; cursor: not-allowed; }
+.ai-log { font-size: 0.75rem; max-height: 14rem; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; margin: 0.5rem 0; }
+.ai-log:empty { display: none; }
+.ai-log div { border-left: 3px solid var(--border); padding: 2px 6px; color: var(--muted); word-break: break-word; }
+.ai-log .prompt { border-left-color: var(--accent); color: var(--fg); }
+.ai-log .done { border-left-color: var(--accent); color: var(--fg); }
+.ai-log .warn { border-left-color: #d99000; }
+.ai-log .err { border-left-color: #d33a2f; color: #b3261e; }
+body.dark .panel label textarea, body.dark .panel input[type=password] { background: #1f2126; border-color: #33363c; color: #e5e2de; }
+body.dark .ai-log .prompt, body.dark .ai-log .done { color: #e5e2de; }
