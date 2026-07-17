@@ -153,10 +153,10 @@ const REVIEW_MESSAGE = `自審清單,逐項檢查剛才的修改:
 let aborter = null;
 let aiUndoStack = []; // 每次 AI 修改推一層 {draftId, snap},按一次退一步;只作用於目前草稿
 function undoEntries() { return aiUndoStack.filter((e) => e.draftId === currentId); }
-function updateUndoButton() {
+function updateUndoButton() { // 常駐但停用:隱藏式按鈕使用者找不到(實戰回饋)
   const n = undoEntries().length;
   const b = $('#ai-undo');
-  b.hidden = !n;
+  b.disabled = !n;
   b.textContent = n > 1 ? `還原上一步(可退 ${n} 步)` : '還原上一步';
 }
 
@@ -412,6 +412,7 @@ for (const [label, idea] of IDEAS) {
 window.addEventListener('online', updateGate);
 window.addEventListener('offline', updateGate);
 fillCfgForm();
+updateUndoButton();
 { const c = cfg(); $('#ai-settings').open = needsKey(c) || !c.model; } // 只在載入時決定一次:沒設好=展開;之後不自動開合,不打擾使用者輸入
 
 // ── WebMCP:同一組工具註冊給頁面的 modelContext,讓 ZeroType Agent 等外部 agent 直接聰明操作 ──
