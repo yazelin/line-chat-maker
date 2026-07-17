@@ -25,6 +25,7 @@
 <p class="hint">「未檢出」不代表圖是真的對話截圖——別的工具、修圖軟體做的假圖這裡驗不出來。這個驗證只回答一件事:這張圖是不是本工具匯出的示意圖。</p>
 <script>
 'use strict';
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js'); // SW 每頁註冊:直接落地本頁也要能離線
 const MAGIC = 'LCM1|';
 // 與 app.js 相同的場紋節點函數:±1,週期 8 節點
 function blockSign(i, j) {
