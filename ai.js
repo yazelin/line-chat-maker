@@ -382,19 +382,49 @@ function updateGate() {
 // 免費體驗額度徽章(右上角):免費 provider 才顯示,任務結束後刷新
 async function refreshQuota() {
   const badge = $('#ai-quota');
-  if (cfg().provider !== 'free') { badge.hidden = true; return; }
   try {
     const r = await fetch(PROVIDERS.free.base + '/quota');
     if (!r.ok) throw new Error('quota ' + r.status);
     const q = await r.json();
-    badge.textContent = `今日 AI 剩 ${Math.max(0, q.ipLimit - q.ipUsed)} / ${q.ipLimit}`;
-    badge.title = `免費體驗額度,每天重置(約 20 次=1 個完整作品)。全站今日剩 ${Math.max(0, q.globalLimit - q.globalUsed)} / ${q.globalLimit};用完可到連線設定填自己的 Key。`;
+    const parts = [];
+    if (cfg().provider === 'free') parts.push(`AI ${Math.max(0, q.ipLimit - q.ipUsed)}/${q.ipLimit}`);
+    if (imgCfg().provider === 'free' && typeof q.imgLimit === 'number') parts.push(`圖 ${Math.max(0, q.imgLimit - q.imgUsed)}/${q.imgLimit}`);
+    if (!parts.length) { badge.hidden = true; return; }
+    badge.textContent = '今日剩:' + parts.join('・');
+    badge.title = `免費額度每天重置(文字約 20 次=1 個作品;補圖 1 次=一整批圖)。全站今日:文字剩 ${Math.max(0, q.globalLimit - q.globalUsed)}/${q.globalLimit}、補圖剩 ${Math.max(0, (q.imgGlobalLimit || 0) - (q.imgGlobalUsed || 0))}/${q.imgGlobalLimit || 0}。自帶 key 不受這些限制。`;
     badge.hidden = false;
   } catch (e) { badge.hidden = true; }
 }
 // ── AI 補圖:格盤一次生成 → 自動切回(幾何=程式碼,內容=美術指導 AI;走 worker 代理的 codex-image-service) ──
 const PROXY_BASE = PROVIDERS.free.base;
 let imgAbort = false;
+function imgCfg() { const c = cfg(); return { provider: c.imgProvider === 'gemini' ? 'gemini' : 'free', key: c.imgKey || '' }; }
+async function geminiImage(prompt, size) { // 自帶 Gemini key 生圖(不吃站長額度)
+  const c = cfg();
+  const key = imgCfg().key || (c.wProvider === 'gemini' ? c.wKey : '') || (c.provider === 'gemini' ? c.key : '');
+  if (!key) { const e = new Error('請在連線設定的「圖像生成」填 Gemini API Key(或先把編劇設成 Gemini)。'); throw e; }
+  const aspect = size === '1024x1536' ? '2:3' : size === '1536x1024' ? '3:2' : '1:1';
+  const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image:generateContent', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: aspect } } }),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) { const e0 = Array.isArray(d) ? d[0] || {} : d; throw new Error((e0.error && e0.error.message) || 'HTTP ' + r.status); }
+  const parts = (((d.candidates || [])[0] || {}).content || {}).parts || [];
+  const part = parts.find((p) => p.inlineData);
+  if (!part) throw new Error('Gemini 沒有回傳圖片。');
+  const bin = atob(part.inlineData.data);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return createImageBitmap(new Blob([arr], { type: part.inlineData.mimeType || 'image/png' }));
+}
+async function generateBitmap(prompt, size) { // 生圖路由:站長贊助(worker 代理)或自帶 Gemini
+  if (imgCfg().provider === 'gemini') { log('生圖:Gemini(自帶 key,不吃每日限量)…'); return geminiImage(prompt, size); }
+  const jobId = await createImageJob(prompt, size);
+  const url = await waitImageJob(jobId);
+  return fetchGeneratedBitmap(url);
+}
 const ART_DIRECTOR_SYSTEM = `你是美術指導。輸入是一份 LINE 對話腳本與待補圖清單(格號/類型/線索)。為每一格寫繪圖 prompt(繁體中文,每格 ≤80 字):
 - 同一人物在不同格外觀必須一致:先自行設定(髮型/衣著/年齡/體型),每個出現該人物的格都重複同一套描述
 - 貼圖格:Q版可愛貼圖風格,主體置中佔滿,背景整片純綠色,無文字無邊框
@@ -490,10 +520,8 @@ async function runFillImages() {
     const cells = slots.map((s, i) => ({ slot: s, prompt: String((plans.find((p) => p.cell === i + 1) || {}).prompt || s.hint || '簡潔可愛的插圖') }));
     const grid = planGrid(cells.length);
     log(`送出生圖(${grid.cols}×${grid.rows} 格盤)…`);
-    const jobId = await createImageJob(buildGridPrompt(grid, cells), grid.size);
-    const url = await waitImageJob(jobId);
+    const img = await generateBitmap(buildGridPrompt(grid, cells), grid.size);
     log('生成完成,切圖回填…');
-    const img = await fetchGeneratedBitmap(url);
     const cw = img.width / grid.cols, ch = img.height / grid.rows, inset = 0.08;
     cells.forEach((c, i) => {
       const col = i % grid.cols, row = Math.floor(i / grid.cols);
@@ -509,6 +537,7 @@ async function runFillImages() {
   } catch (e) { log(e.name === 'AbortError' ? '已停止。' : '補圖失敗:' + e.message, 'err'); toast('AI 補圖失敗,詳見 AI 分頁紀錄'); }
   aborter = null; imgAbort = false;
   setBusy(false);
+  refreshQuota();
 }
 $('#ai-images').addEventListener('click', () => { if (!navigator.onLine) { toast('離線中,AI 補圖需要網路'); return; } runFillImages(); });
 window.lcmRegenImage = async (msgIndex) => { // 單格重生(app.js 的 hover 按鈕呼叫)
@@ -519,9 +548,7 @@ window.lcmRegenImage = async (msgIndex) => { // 單格重生(app.js 的 hover �
   log('單格重生:' + m.imgPrompt.slice(0, 40), 'prompt');
   try {
     const style = m.kind === 'sticker' ? '。Q版可愛貼圖風格,主體置中,背景整片純綠色,無文字' : '。真實手機隨手拍質感';
-    const jobId = await createImageJob(m.imgPrompt + style, '1024x1024');
-    const url = await waitImageJob(jobId);
-    const img = await fetchGeneratedBitmap(url);
+    const img = await generateBitmap(m.imgPrompt + style, '1024x1024');
     m.img = drawSlot(img, 0, 0, img.width, img.height, m.kind);
     aiUndoStack.push({ draftId: currentId, snap: before });
     if (aiUndoStack.length > 20) aiUndoStack.shift();
@@ -530,6 +557,7 @@ window.lcmRegenImage = async (msgIndex) => { // 單格重生(app.js 的 hover �
   } catch (e) { log('重生失敗:' + e.message, 'err'); toast('重生失敗'); }
   imgAbort = false;
   setBusy(false);
+  refreshQuota();
 };
 
 // 劇本跟著草稿走(localStorage per draft id,不進 state:分享連結與匯出不帶劇本)
@@ -554,6 +582,9 @@ function fillCfgForm() {
   $('#ai-w-base').value = c.wBase || '';
   $('#ai-w-model').value = c.wModel || '';
   $('#ai-w-key').value = c.wKey || '';
+  $('#ai-img-provider').value = c.imgProvider === 'gemini' ? 'gemini' : 'free';
+  $('#ai-img-fields').hidden = c.imgProvider !== 'gemini';
+  $('#ai-img-key').value = c.imgKey || '';
   updateGate();
 }
 function setBusy(on) {
@@ -571,7 +602,12 @@ $('#ai-provider').addEventListener('change', (e) => {
   fillCfgForm();
   refreshQuota();
 });
-for (const [id, key] of [['#ai-base', 'base'], ['#ai-model', 'model'], ['#ai-key', 'key'], ['#ai-loops', 'loops'], ['#ai-w-base', 'wBase'], ['#ai-w-model', 'wModel'], ['#ai-w-key', 'wKey']]) {
+$('#ai-img-provider').addEventListener('change', (e) => {
+  saveCfg({ ...cfg(), imgProvider: e.target.value });
+  fillCfgForm();
+  refreshQuota();
+});
+for (const [id, key] of [['#ai-base', 'base'], ['#ai-model', 'model'], ['#ai-key', 'key'], ['#ai-loops', 'loops'], ['#ai-w-base', 'wBase'], ['#ai-w-model', 'wModel'], ['#ai-w-key', 'wKey'], ['#ai-img-key', 'imgKey']]) {
   $(id).addEventListener('input', (e) => { saveCfg({ ...cfg(), [key]: e.target.value.trim() }); updateGate(); });
 }
 $('#ai-w-provider').addEventListener('change', (e) => {

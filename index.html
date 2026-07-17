@@ -109,6 +109,11 @@
         <label>API Key <input id="ai-w-key" type="password" autocomplete="off"></label>
       </div>
       <p class="hint">寫劇本重創意、執行重穩定,可用不同模型:例如編劇用 Gemini,執行留 Groq gpt-oss-120b。留「同執行設定」=不分。</p>
+      <h2>圖像生成(AI 補圖/重生用)</h2>
+      <label>來源 <select id="ai-img-provider"><option value="free">站長贊助(每日限量)</option><option value="gemini">Gemini(自帶 key,不限量)</option></select></label>
+      <div id="ai-img-fields" hidden>
+        <label>Gemini API Key(留空=自動沿用編劇或執行設定裡的 Gemini key) <input id="ai-img-key" type="password" autocomplete="off"></label>
+      </div>
       <p class="hint">AI 直接改目前草稿,改完可一鍵還原。設定與 Key 只存這台裝置(localStorage),不會進草稿、分享連結或任何伺服器;對話腳本會傳給你選的 AI 服務。Ollama 需啟動時設 OLLAMA_ORIGINS 允許本站。僅供創作示意,請勿用於詐騙或誤導。</p>
     </details>
     <div class="addbar">
