@@ -64,7 +64,11 @@ export default {
 
     const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + env.GROQ_API_KEY },
+      headers: {
+        'content-type': 'application/json',
+        authorization: 'Bearer ' + env.GROQ_API_KEY,
+        'user-agent': 'lcm-ai-proxy/1.0 (+https://github.com/yazelin/line-chat-maker)', // Groq 前的 CF 防護會擋無 UA 的雲端請求
+      },
       body: JSON.stringify(clean),
     });
     const text = await upstream.text();
