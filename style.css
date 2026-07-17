@@ -276,3 +276,4 @@ body.dark #ai-settings summary { color: #e5e2de; }
 .ai-quota { position: absolute; top: 0.7rem; right: 0.9rem; font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.6rem; background: #fff; }
 @media (max-width: 640px) { .ai-quota { position: static; display: inline-block; margin-top: 0.3rem; } }
 body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8; }
+.footer .ver { opacity: 0.7; margin-left: 0.3rem; }
