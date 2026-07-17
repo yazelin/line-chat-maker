@@ -54,7 +54,19 @@ const TOOL_DEFS = [
   { name: 'export_png', description: '把目前畫面匯出成 PNG(會觸發下載)。只在使用者明確要求匯出時使用。', parameters: { type: 'object', properties: {}, additionalProperties: false } },
 ];
 function sanitizeMessages(list) {
-  return rehydrate(list).filter((m) => m && typeof m === 'object' && typeof m.type === 'string');
+  const out = [];
+  for (const m of rehydrate(list).filter((x) => x && typeof x === 'object' && typeof x.type === 'string')) {
+    const emptyText = m.type === 'msg' && (m.kind || 'text') === 'text' && !(m.text && String(m.text).trim());
+    if (emptyText) { // 模型常把 react/已讀寫成空白訊息:有 react 就併回前一則,純空白直接丟(程式碼保險)
+      if (Array.isArray(m.react) && m.react.length && out.length && out[out.length - 1].type === 'msg') {
+        const prev = out[out.length - 1];
+        prev.react = (Array.isArray(prev.react) ? prev.react : []).concat(m.react);
+      }
+      continue;
+    }
+    out.push(m);
+  }
+  return out;
 }
 function fixRefs() { // left 訊息的 personId 必須存在;沒人就補一位
   if (!state.people.length) state.people.push({ id: 'p1', name: '朋友', avatar: null });
@@ -94,6 +106,8 @@ schema 重點:
   {"type":"msg","side":"right","text":"...","time":"下午4:06","read":"已讀"} 自己(綠泡泡),不需 personId;群組的 read 可寫「已讀 8」
   選填 quote:{name,text}=引用回覆;react:["😆"]=表情回應列
   kind:"image"|"sticker"(配 img 欄位)、"voice"(dur:"0:12")、"file"(fname,fsize);kind 省略=文字
+- react 是「別人對這則訊息的反應」,放在**被反應的那一則訊息**的 react 欄位(劇本寫「小雯對阿亮上一則按 ❤️」=把 ❤️ 加進阿亮那則的 react)。絕不可為了 react 或已讀狀態建立空白訊息(text 空的 msg 是錯誤)。
+- read 欄位只在 side:"right"(自己的綠泡泡)有意義;left 訊息不放 read。「已讀不回」=right 訊息 read:"已讀"+下一則時間拉開。
 - 時間照台灣 LINE 慣例如「下午4:06」,前後訊息時間要合理遞增。連續同 personId 的 left 訊息會自動省略頭像暱稱。
 
 創作流程(使用者的提示通常很簡短,你要把它長成完整作品):
@@ -115,6 +129,10 @@ const WRITER_SYSTEM = `你是資深編劇,專為「LINE 對話截圖」這種形
 - 已讀不回(read 欄+下一則的時間差)、時間跳躍、日期分隔、「(略)」省略分隔
 - 貼圖/圖片訊息、引用回覆(quote)、表情回應(react)、語音/檔案訊息
 - 輸入框草稿(draft=打了沒送出的話,強力的結尾武器)、置頂公告、聊天室名稱與 1對1/群組的選擇
+武器的正確用法(寫錯執行端會做出怪畫面):
+- 表情回應(react)不是一則訊息,是「貼在對方某則既有訊息下方」的小表情。劇本寫法:「(小雯在阿亮的上一則按了 ❤️)」;絕不可寫成「小雯:(react)❤️」這種獨立台詞。
+- 已讀/沉默/未回是「狀態」不是訊息,寫在訊息旁的括號註記即可,不要當成一行台詞。
+- 「已讀不回」的表現=自己那句綠泡泡標已讀+下一則訊息的時間拉開;對方(左側)訊息沒有已讀標示。
 寫出完整劇本,包含:
 1. 角色設定:每人的個性、說話習慣(語助詞/標點/長短句)
 2. 逐則對話:誰說/內容/時間(照「下午4:06」慣例遞增)/已讀狀態/用到的形式武器
