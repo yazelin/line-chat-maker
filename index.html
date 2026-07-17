@@ -100,6 +100,14 @@
       <label>Model <input id="ai-model" type="text" spellcheck="false"></label>
       <label>API Key <input id="ai-key" type="password" autocomplete="off"></label>
       <label>迴圈上限(單次「開始製作」的輪數天花板,每按一次重新起算;愈高愈能自行推進,也愈耗額度) <input id="ai-loops" type="number" min="3" max="50"></label>
+      <h2>編劇/評審模型(選填)</h2>
+      <label>Provider <select id="ai-w-provider"></select></label>
+      <div id="ai-w-fields" hidden>
+        <label>API Base <input id="ai-w-base" type="text" spellcheck="false"></label>
+        <label>Model <input id="ai-w-model" type="text" spellcheck="false"></label>
+        <label>API Key <input id="ai-w-key" type="password" autocomplete="off"></label>
+      </div>
+      <p class="hint">寫劇本重創意、執行重穩定,可用不同模型:例如編劇用 Gemini,執行留 Groq gpt-oss-120b。留「同執行設定」=不分。</p>
       <p class="hint">AI 直接改目前草稿,改完可一鍵還原。設定與 Key 只存這台裝置(localStorage),不會進草稿、分享連結或任何伺服器;對話腳本會傳給你選的 AI 服務。Ollama 需啟動時設 OLLAMA_ORIGINS 允許本站。僅供創作示意,請勿用於詐騙或誤導。</p>
     </details>
     <div class="addbar">
