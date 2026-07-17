@@ -16,7 +16,7 @@ const PROVIDERS = {
 function cfg() {
   let c = {};
   try { c = JSON.parse(localStorage.getItem('lcm-ai')) || {}; } catch (e) {}
-  if (!PROVIDERS[c.provider]) c = { provider: 'groq', base: PROVIDERS.groq.base, model: PROVIDERS.groq.model, key: '' };
+  if (!PROVIDERS[c.provider]) c = { provider: 'free', base: PROVIDERS.free.base, model: PROVIDERS.free.model, key: '' }; // 新使用者預設=免費體驗,零設定即可玩
   return c;
 }
 function saveCfg(c) { try { localStorage.setItem('lcm-ai', JSON.stringify(c)); } catch (e) {} }
