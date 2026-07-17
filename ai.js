@@ -89,12 +89,26 @@ schema 重點:
   kind:"image"|"sticker"(配 img 欄位)、"voice"(dur:"0:12")、"file"(fname,fsize);kind 省略=文字
 - 時間照台灣 LINE 慣例如「下午4:06」,前後訊息時間要合理遞增。連續同 personId 的 left 訊息會自動省略頭像暱稱。
 
+創作流程(使用者的提示通常很簡短,你要把它長成完整作品):
+1. 補齊規格:先在心中定好角色個性與關係、劇情弧(起因→轉折→收尾)、要用哪些說故事手法——已讀不回、時間跳躍、日期分隔、「(略)」省略、貼圖、引用回覆、表情回應、輸入框未送出的草稿(draft)都是敘事工具。
+2. 產出初稿:依規格用工具一次做完整——settings(title/mode 要相符)、people、messages 全部到位,不要只做一半。
+3. 自審修稿:每次修改後你會收到自審要求,用檢查清單重讀腳本;有不合格就繼續修,全部合格才收工。
+
 規則:
 - 一律使用繁體中文(zh-TW)回覆。
 - 收到任務直接用工具完成,不要反問、不要只給建議或範例;改完用一句話回報結果。
 - 對話內容要自然口語像真人閒聊,每個人物講話風格一致;適度用貼圖、已讀、時間差說故事。
 - @imgN 代表既有圖片:要沿用就原樣保留;不可發明不存在的 @imgN;新的 image/sticker 訊息 img 給 null(顯示佔位圖)。
 - 僅供創作示意(部落格配圖、教學、行銷素材);拒絕製作用於詐騙、毀謗、偽造證據的內容。`;
+
+const REVIEW_MESSAGE = `自審清單,逐項檢查剛才的修改:
+1) 使用者任務與你補齊的規格是否完整達成?劇情有起因、轉折、收尾?
+2) 每個人物口氣前後一致、像真人?
+3) 時間格式照「下午4:06」慣例且合理遞增?
+4) 節奏有留白?(日期分隔、(略)、已讀不回的時間差)
+5) 有善用視覺敘事?(貼圖、引用回覆、表情回應、draft)
+6) settings 的 title/mode 與內容相符?
+先用 get_script 重讀一次腳本核對;有任何不合格就立刻用工具修正,全部合格才用一句話回報完成。`;
 
 let aborter = null;
 let aiSnapshot = null;
@@ -123,15 +137,16 @@ async function runAgent(prompt) {
     { role: 'system', content: SYSTEM },
     { role: 'user', content: '目前腳本 JSON:\n' + JSON.stringify(strip(scriptOf())) + '\n\n使用者任務:' + prompt },
   ];
+  const loopLimit = Math.min(50, Math.max(3, +cfg().loops || 15));
   try {
-    for (let step = 1; step <= 10; step++) {
+    for (let step = 1; step <= loopLimit; step++) {
       const m = await chat(msgs, force);
       force = false;
       msgs.push(m);
       const calls = Array.isArray(m.tool_calls) ? m.tool_calls : [];
       if (!calls.length) {
         const text = (typeof m.content === 'string' ? m.content : '').trim();
-        if (!usedTool && step < 10) { // 反偷懶:只回文字沒動手,踹回去(參考 zerotype)
+        if (!usedTool && step < loopLimit) { // 反偷懶:只回文字沒動手,踹回去(參考 zerotype)
           log('模型只回了文字,要求改用工具執行', 'warn');
           msgs.push({ role: 'user', content: '不要只回覆文字或計畫,現在立刻呼叫工具完成任務。' });
           force = true;
@@ -140,6 +155,7 @@ async function runAgent(prompt) {
         log(text || '已完成。', 'done');
         return;
       }
+      let batchMutated = false;
       for (const call of calls) {
         const name = call.function && call.function.name;
         let args = {};
@@ -149,12 +165,17 @@ async function runAgent(prompt) {
         try {
           out = await execTool(name, args);
           usedTool = true;
-          if (name === 'apply_script' || name === 'append_messages') mutated = true;
+          if (name === 'apply_script' || name === 'append_messages') { mutated = true; batchMutated = true; }
         } catch (e) { out = JSON.stringify({ ok: false, error: e.message }); }
         msgs.push({ role: 'tool', tool_call_id: call.id, name, content: out });
       }
+      if (batchMutated && step < loopLimit - 1) { // 改完強制自審一輪(參考 zerotype 的 post-mutation review)
+        log('已要求模型自審剛才的修改', 'warn');
+        msgs.push({ role: 'user', content: REVIEW_MESSAGE });
+        force = true;
+      }
     }
-    log('已達迴圈上限(10),停在目前結果。', 'warn');
+    log('已達迴圈上限(' + loopLimit + '),停在目前結果。', 'warn');
   } finally {
     if (mutated) { aiSnapshot = before; $('#ai-undo').hidden = false; }
     aborter = null;
@@ -188,6 +209,7 @@ function fillCfgForm() {
   $('#ai-base').value = c.base || '';
   $('#ai-model').value = c.model || '';
   $('#ai-key').value = c.key || '';
+  $('#ai-loops').value = Math.min(50, Math.max(3, +c.loops || 15));
   updateGate();
 }
 function setBusy(on) {
@@ -201,7 +223,7 @@ $('#ai-provider').addEventListener('change', (e) => {
   saveCfg({ ...cfg(), provider: e.target.value, base: p.base, model: p.model });
   fillCfgForm();
 });
-for (const [id, key] of [['#ai-base', 'base'], ['#ai-model', 'model'], ['#ai-key', 'key']]) {
+for (const [id, key] of [['#ai-base', 'base'], ['#ai-model', 'model'], ['#ai-key', 'key'], ['#ai-loops', 'loops']]) {
   $(id).addEventListener('input', (e) => { saveCfg({ ...cfg(), [key]: e.target.value.trim() }); updateGate(); });
 }
 $('#ai-run').addEventListener('click', async () => {
