@@ -56,6 +56,10 @@ const TOOL_DEFS = [
 function sanitizeMessages(list) {
   const out = [];
   for (const m of rehydrate(list).filter((x) => x && typeof x === 'object' && typeof x.type === 'string')) {
+    if (m.type === 'msg' && typeof m.text === 'string') {
+      m.text = m.text.replace(/^[((](?:轉折|高潮|伏筆|鋪陳|開場|收尾|結尾|轉折點|高潮點)[))]\s*/, ''); // 舞台指示滲進台詞的保險
+      if (/^[((]略[))]$/.test(m.text.trim())) { out.push({ type: 'skip', text: '⋯⋯(略)⋯⋯' }); continue; } // 「小亮:(略)」→ 正確的省略分隔
+    }
     const emptyText = m.type === 'msg' && (m.kind || 'text') === 'text' && !(m.text && String(m.text).trim());
     if (emptyText) { // 模型常把 react/已讀寫成空白訊息:有 react 就併回前一則,純空白直接丟(程式碼保險)
       if (Array.isArray(m.react) && m.react.length && out.length && out[out.length - 1].type === 'msg') {
@@ -107,6 +111,7 @@ schema 重點:
   選填 quote:{name,text}=引用回覆;react:["😆"]=表情回應列
   kind:"image"|"sticker"(配 img 欄位)、"voice"(dur:"0:12")、"file"(fname,fsize);kind 省略=文字
 - react 是「別人對這則訊息的反應」,放在**被反應的那一則訊息**的 react 欄位(劇本寫「小雯對阿亮上一則按 ❤️」=把 ❤️ 加進阿亮那則的 react)。絕不可為了 react 或已讀狀態建立空白訊息(text 空的 msg 是錯誤)。
+- text 只放角色真的打出來的文字。劇本裡的括號註記——(轉折)(高潮)(已讀)(略)(草稿)(react)等——是給你的舞台指示,**絕不可抄進 text**:轉折/高潮照常填內容不含標記;(略)=獨立 skip 分隔則;草稿=settings.draft;已讀=read 欄位。
 - read 欄位只在 side:"right"(自己的綠泡泡)有意義;left 訊息不放 read。「已讀不回」=right 訊息 read:"已讀"+下一則時間拉開。
 - 時間照台灣 LINE 慣例如「下午4:06」,前後訊息時間要合理遞增。連續同 personId 的 left 訊息會自動省略頭像暱稱。
 
@@ -133,6 +138,8 @@ const WRITER_SYSTEM = `你是資深編劇,專為「LINE 對話截圖」這種形
 - 表情回應(react)不是一則訊息,是「貼在對方某則既有訊息下方」的小表情。劇本寫法:「(小雯在阿亮的上一則按了 ❤️)」;絕不可寫成「小雯:(react)❤️」這種獨立台詞。
 - 已讀/沉默/未回是「狀態」不是訊息,寫在訊息旁的括號註記即可,不要當成一行台詞。
 - 「已讀不回」的表現=自己那句綠泡泡標已讀+下一則訊息的時間拉開;對方(左側)訊息沒有已讀標示。
+- 台詞行只能寫角色「真的會打出來」的字。轉折/高潮/伏筆這類舞台指示,寫在劇本最後的標註區(第 3 點),不要放在台詞行內——執行端曾把「(轉折)」原樣抄進對話泡泡。
+- 「(略)」是獨立的省略分隔行,不屬於任何角色,不要寫成「小亮:(略)」。
 寫出完整劇本,包含:
 1. 角色設定:每人的個性、說話習慣(語助詞/標點/長短句)
 2. 逐則對話:誰說/內容/時間(照「下午4:06」慣例遞增)/已讀狀態/用到的形式武器
