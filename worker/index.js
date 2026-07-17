@@ -30,7 +30,52 @@ export default {
         { headers: { 'content-type': 'application/json', ...cors } },
       );
     }
-    if (req.method !== 'POST' || pathname !== '/chat/completions') return err(404, '這個免費代理只有 POST /chat/completions 與 GET /quota。');
+    // ── AI 補圖:代理 codex-image-service(cimg key 只在 secret;圖像額度獨立於文字) ──
+    if (pathname.startsWith('/images/')) {
+      if (!okOrigin) return err(403, '這個免費代理只服務 line-chat-maker 網頁。');
+      const imgBase = (env.CODEX_IMAGE_BASE || 'https://ching-tech.ddns.net/codex-image').replace(/\/+$/, '');
+      const imgHeaders = { authorization: 'Bearer ' + env.CODEX_IMAGE_KEY, 'user-agent': 'lcm-ai-proxy/1.0' };
+      const day = new Date().toISOString().slice(0, 10);
+      const ip = req.headers.get('CF-Connecting-IP') || 'unknown';
+      if (req.method === 'POST' && pathname === '/images/jobs') { // 建圖(計額度)
+        const raw = await req.text();
+        if (raw.length > 40_000) return err(413, '請求太大。');
+        let body;
+        try { body = JSON.parse(raw); } catch { return err(400, '請求不是合法 JSON。'); }
+        if (typeof body.prompt !== 'string' || !body.prompt.trim() || body.prompt.length > 12_000) return err(400, 'prompt 格式不對。');
+        const size = ['1024x1024', '1024x1536', '1536x1024'].includes(body.size) ? body.size : '1024x1024';
+        const imgIpLimit = +env.IMG_IP_DAILY || 2;
+        const imgGlobalLimit = +env.IMG_GLOBAL_DAILY || 20;
+        let ic;
+        try { ic = await bump(env.DB, day, 'img:' + ip, '__img_global__'); }
+        catch (e) {
+          await env.DB.exec('CREATE TABLE IF NOT EXISTS lcm_quota (day TEXT NOT NULL, ip TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, ip))');
+          ic = await bump(env.DB, day, 'img:' + ip, '__img_global__');
+        }
+        if (ic.global > imgGlobalLimit) return err(429, '今天全站的 AI 補圖額度用完了(生圖走亞澤的 ChatGPT 額度,比文字貴)。明天再來。');
+        if (ic.ip > imgIpLimit) return err(429, `你今天的 AI 補圖額度用完了(每天 ${imgIpLimit} 次)。明天再來,或自己上傳圖片。`);
+        const upstream = await fetch(imgBase + '/v1/images/jobs', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', ...imgHeaders },
+          body: JSON.stringify({ prompt: body.prompt, size, quality: 'medium', count: 1 }),
+        });
+        return new Response(await upstream.text(), { status: upstream.status, headers: { 'content-type': 'application/json', ...cors } });
+      }
+      if (req.method === 'GET' && /^\/images\/jobs\/[A-Za-z0-9_-]+$/.test(pathname)) { // 輪詢(不計額度)
+        const id = pathname.split('/').pop();
+        const upstream = await fetch(imgBase + '/v1/images/jobs/' + id, { headers: imgHeaders });
+        return new Response(await upstream.text(), { status: upstream.status, headers: { 'content-type': 'application/json', ...cors } });
+      }
+      if (req.method === 'GET' && pathname === '/images/file') { // 取成品(CORS 中轉,canvas 才切得動);只准 /generated/ 下的 png
+        const p = new URL(req.url).searchParams.get('p') || '';
+        if (!/^\/generated\/[A-Za-z0-9_.-]+\.png$/.test(p)) return err(400, '路徑不合法。');
+        const upstream = await fetch(imgBase + p, { headers: imgHeaders });
+        return new Response(upstream.body, { status: upstream.status, headers: { 'content-type': 'image/png', 'cache-control': 'no-store', ...cors } });
+      }
+      return err(404, 'images 路由:POST /images/jobs、GET /images/jobs/<id>、GET /images/file?p=/generated/xx.png。');
+    }
+
+    if (req.method !== 'POST' || pathname !== '/chat/completions') return err(404, '這個免費代理只有 POST /chat/completions、GET /quota 與 /images/*。');
     if (!okOrigin) return err(403, '這個免費代理只服務 line-chat-maker 網頁。想自架:repo 的 worker/ 目錄照 README 部署,用自己的 key。');
 
     const raw = await req.text();
@@ -76,9 +121,9 @@ export default {
   },
 };
 
-async function bump(db, day, ip) {
+async function bump(db, day, ip, globalKey) {
   const sql = 'INSERT INTO lcm_quota (day, ip, n) VALUES (?1, ?2, 1) ON CONFLICT(day, ip) DO UPDATE SET n = n + 1 RETURNING n';
   const mine = await db.prepare(sql).bind(day, ip).first();
-  const all = await db.prepare(sql).bind(day, '__global__').first();
+  const all = await db.prepare(sql).bind(day, globalKey || '__global__').first();
   return { ip: mine.n, global: all.n };
 }

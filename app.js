@@ -401,6 +401,7 @@ function controls(m, i) {
   btn('↑', '上移', () => { if (i > 0) { state.messages.splice(i - 1, 0, state.messages.splice(i, 1)[0]); save(); render(); } });
   btn('↓', '下移', () => { if (i < state.messages.length - 1) { state.messages.splice(i + 1, 0, state.messages.splice(i, 1)[0]); save(); render(); } });
   if (m.type === 'msg') {
+    if ((m.kind === 'image' || m.kind === 'sticker') && m.imgPrompt && window.lcmRegenImage) btn('重生', 'AI 重畫這張圖(可還原)', () => window.lcmRegenImage(i));
     btn('⇄', '換邊', () => { if (m.side === 'left') { m.side = 'right'; m.read = m.read || ''; } else { m.side = 'left'; m.personId = m.personId || state.people[0].id; } save(); render(); });
     if ((m.kind || 'text') === 'text') btn('引', '加/移除引用回覆', () => { m.quote = m.quote ? null : { name: '某人', text: '被引用的訊息' }; save(); render(); });
     btn('心', '加/移除表情回應', () => { m.react = m.react && m.react.length ? null : ['😆']; save(); render(); });
