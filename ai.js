@@ -8,7 +8,7 @@ const PROVIDERS = {
   free: { label: '刷亞澤的信用卡(免費體驗,每日限量)', base: 'https://lcm-ai-proxy.yazelinj303.workers.dev', model: 'openai/gpt-oss-120b', keyless: true }, // 代理 worker 見 repo worker/;額度用完會引導填自己的 key
   groq: { label: 'Groq', base: 'https://api.groq.com/openai/v1', model: 'openai/gpt-oss-120b' }, // 2026-07 實測:工具呼叫最穩+繁中最乾淨(qwen3 會捏造 @imgN)
   openai: { label: 'OpenAI', base: 'https://api.openai.com/v1', model: 'gpt-5-mini' },
-  gemini: { label: 'Gemini', base: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash', writerModel: 'gemini-2.5-pro' }, // 編劇選 Gemini 帶 pro:創作力差一檔
+  gemini: { label: 'Gemini', base: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-3.1-flash-lite', writerModel: 'gemini-3.1-pro-preview' }, // 2026-07 實測:新申請的 key 拿不到 2.5 世代(404),預設用 3.1;編劇帶 pro
   openrouter: { label: 'OpenRouter', base: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4.1-mini' },
   ollama: { label: 'Ollama(本機)', base: 'http://localhost:11434/v1', model: 'llama3.2', keyless: true },
   custom: { label: '自訂(OpenAI 相容)', base: '', model: '', keyless: true },
@@ -235,7 +235,8 @@ async function chat(msgs, force, noTools, useCfg) {
   });
   const d = await res.json().catch(() => ({}));
   if (!res.ok) { // 錯誤沒帶 JSON 訊息時附上目標,好診斷「打錯地方」類問題(model 與 URL 都顯示)
-    const detail = (d.error && d.error.message) || d.message;
+    const e0 = Array.isArray(d) ? d[0] || {} : d; // Gemini 把錯誤包在陣列裡
+    const detail = (e0.error && e0.error.message) || e0.message;
     throw new Error(detail || `HTTP ${res.status}(${c.model} @ ${url})`);
   }
   const m = d.choices && d.choices[0] && d.choices[0].message;
