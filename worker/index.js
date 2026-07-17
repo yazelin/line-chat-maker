@@ -8,13 +8,29 @@ export default {
     const okOrigin = (env.ALLOWED_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean).includes(origin);
     const cors = {
       'access-control-allow-origin': okOrigin ? origin : 'null',
-      'access-control-allow-methods': 'POST, OPTIONS',
+      'access-control-allow-methods': 'GET, POST, OPTIONS',
       'access-control-allow-headers': 'content-type, authorization',
       'access-control-max-age': '86400',
     };
     const err = (status, message) => new Response(JSON.stringify({ error: { message } }), { status, headers: { 'content-type': 'application/json', ...cors } });
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
-    if (req.method !== 'POST' || new URL(req.url).pathname !== '/chat/completions') return err(404, '這個免費代理只有 POST /chat/completions。');
+    const pathname = new URL(req.url).pathname;
+    if (req.method === 'GET' && pathname === '/quota') { // 唯讀查額度(給前端徽章),不計入用量
+      if (!okOrigin) return err(403, '這個免費代理只服務 line-chat-maker 網頁。');
+      const day = new Date().toISOString().slice(0, 10);
+      const ip = req.headers.get('CF-Connecting-IP') || 'unknown';
+      let mine = 0, all = 0;
+      try {
+        const a = await env.DB.prepare('SELECT n FROM lcm_quota WHERE day = ?1 AND ip = ?2').bind(day, ip).first();
+        const b = await env.DB.prepare('SELECT n FROM lcm_quota WHERE day = ?1 AND ip = ?2').bind(day, '__global__').first();
+        mine = a ? a.n : 0; all = b ? b.n : 0;
+      } catch (e) {} // 表還沒建=零用量
+      return new Response(
+        JSON.stringify({ ipUsed: mine, ipLimit: +env.IP_DAILY || 60, globalUsed: all, globalLimit: +env.GLOBAL_DAILY || 1200 }),
+        { headers: { 'content-type': 'application/json', ...cors } },
+      );
+    }
+    if (req.method !== 'POST' || pathname !== '/chat/completions') return err(404, '這個免費代理只有 POST /chat/completions 與 GET /quota。');
     if (!okOrigin) return err(403, '這個免費代理只服務 line-chat-maker 網頁。想自架:repo 的 worker/ 目錄照 README 部署,用自己的 key。');
 
     const raw = await req.text();

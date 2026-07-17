@@ -269,3 +269,9 @@ body.dark #ai-settings summary { color: #e5e2de; }
 #ai-enhance, #ai-run { flex: 1 1 100%; }
 .ai-quickbar { margin-top: -1.7rem; } /* .stage gap 2.2rem 太遠,拉回貼著 chat-addbar */
 .chat-addbar .playbtn:hover { background: #05b34e; border-color: #05b34e; color: #fff; } /* 蓋掉通用 hover 綠字,避免綠字疊綠底 */
+
+/* ── 右上角免費 AI 額度徽章 ── */
+.topbar { position: relative; }
+.ai-quota { position: absolute; top: 0.7rem; right: 0.9rem; font-size: 0.75rem; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0.15rem 0.6rem; background: #fff; }
+@media (max-width: 640px) { .ai-quota { position: static; display: inline-block; margin-top: 0.3rem; } }
+body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8; }
