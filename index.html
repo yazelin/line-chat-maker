@@ -112,15 +112,8 @@
     <div class="addbar">
       <button id="ai-run" class="primary">開始製作 LINE 對話</button>
       <button id="ai-stop" hidden>停止</button>
-      <button id="ai-undo" hidden>還原 AI 修改前</button>
     </div>
-    <p class="hint">依上面的劇本製作;劇本欄留空則直接照主題發揮。</p>
-    <label>微調指令(選填:做完後想小改,直接下指令改畫面,不經劇本;Ctrl+Enter 執行)
-      <input id="ai-quick" type="text" placeholder="例:把第三句改成貼圖、標題改成「媽」">
-    </label>
-    <div class="addbar">
-      <button id="ai-quick-run">快速修改</button>
-    </div>
+    <p class="hint">依上面的劇本製作;劇本欄留空則直接照主題發揮。做完想小改,用預覽下方的「AI 微調」列,一句話直改畫面。</p>
     <p class="hint" id="ai-status"></p>
     <div id="ai-log" class="ai-log"></div>
     <h2>連線設定</h2>
@@ -198,6 +191,11 @@
     </div>
       <div class="chat-addbar" id="chat-addbar">
         <button data-add="left">+ 他人</button><button data-add="right">+ 我</button><button data-add="image">圖片</button><button data-add="sticker">貼圖</button><button data-add="voice">語音</button><button data-add="file">檔案</button><button data-add="skip">(略)</button><button data-add="date">日期</button><button data-add="play" class="playbtn">▶ 播放</button><button id="preview-toggle">預覽</button>
+      </div>
+      <div class="ai-quickbar" id="ai-quickbar">
+        <input id="ai-quick" type="text" placeholder="AI 微調這個畫面:例 把第3句改成貼圖">
+        <button id="ai-quick-run">AI 修改</button>
+        <button id="ai-undo" hidden>還原上一步</button>
       </div>
   </section>
 </main>
