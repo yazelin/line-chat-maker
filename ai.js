@@ -6,7 +6,7 @@
 // ── 連線設定(只存 localStorage,絕不進 state:草稿與分享連結不能帶到 API key) ──
 const PROVIDERS = {
   groq: { label: 'Groq', base: 'https://api.groq.com/openai/v1', model: 'openai/gpt-oss-120b' }, // 2026-07 實測:工具呼叫最穩+繁中最乾淨(qwen3 會捏造 @imgN)
-  openai: { label: 'OpenAI', base: 'https://api.openai.com/v1', model: 'gpt-4.1-mini' },
+  openai: { label: 'OpenAI', base: 'https://api.openai.com/v1', model: 'gpt-5-mini' },
   gemini: { label: 'Gemini', base: 'https://generativelanguage.googleapis.com/v1beta/openai', model: 'gemini-2.5-flash' },
   openrouter: { label: 'OpenRouter', base: 'https://openrouter.ai/api/v1', model: 'openai/gpt-4.1-mini' },
   ollama: { label: 'Ollama(本機)', base: 'http://localhost:11434/v1', model: 'llama3.2', keyless: true },
@@ -19,6 +19,12 @@ function cfg() {
   return c;
 }
 function saveCfg(c) { try { localStorage.setItem('lcm-ai', JSON.stringify(c)); } catch (e) {} }
+function writerCfg() { // 編劇/評審模型另設(選填);沒設或設不完整回 null,呼叫端退回主設定
+  const c = cfg();
+  if (!c.wProvider || !PROVIDERS[c.wProvider]) return null;
+  return { provider: c.wProvider, base: c.wBase || '', model: c.wModel || '', key: c.wKey || '' };
+}
+function writerCfgBad(w) { return w && (!w.model || !w.base || (!PROVIDERS[w.provider].keyless && !w.key)); }
 
 // ── 圖片佔位:dataURL 換成 @imgN 再給模型,套回時還原(模型 round-trip 不會弄丟圖) ──
 let imgRegistry = [];
@@ -154,8 +160,8 @@ function updateUndoButton() {
   b.textContent = n > 1 ? `還原上一步(可退 ${n} 步)` : '還原上一步';
 }
 
-async function chat(msgs, force, noTools) {
-  const c = cfg();
+async function chat(msgs, force, noTools, useCfg) {
+  const c = useCfg || cfg();
   const res = await fetch(c.base.replace(/\/+$/, '') + '/chat/completions', {
     method: 'POST',
     signal: aborter.signal,
@@ -177,16 +183,17 @@ function textOf(m) { return (typeof m.content === 'string' ? m.content : '').tri
 
 async function writeScreenplay(prompt, existing) { // 編劇→評審迴圈,及格(或 3 輪取最佳)才放行
   log('編劇撰寫劇本中…');
+  const wcfg = writerCfg() || cfg(); // 編劇/評審可另設模型,沒設=同執行
   const brief = '需求:' + prompt + (existing ? '\n\n既有劇本(在此基礎上強化:保留好的部分、針對需求與弱點改寫,輸出完整新版):\n' + existing : '');
   const wmsgs = [{ role: 'system', content: WRITER_SYSTEM }, { role: 'user', content: brief }];
   let best = { script: '', total: -1 };
   for (let round = 1; round <= 3; round++) {
-    const script = textOf(await chat(wmsgs, false, true));
+    const script = textOf(await chat(wmsgs, false, true, wcfg));
     if (!script) break;
     wmsgs.push({ role: 'assistant', content: script });
     let verdict = null;
     try {
-      const raw = textOf(await chat([{ role: 'system', content: CRITIC_SYSTEM }, { role: 'user', content: script }], false, true));
+      const raw = textOf(await chat([{ role: 'system', content: CRITIC_SYSTEM }, { role: 'user', content: script }], false, true, wcfg));
       verdict = JSON.parse((raw.match(/\{[\s\S]*\}/) || ['{}'])[0]);
     } catch (e) {}
     if (!verdict || typeof verdict.total !== 'number') { log('評審回覆無法解析,採用目前劇本', 'warn'); return script; }
@@ -284,15 +291,18 @@ function updateGate() {
   const c = cfg();
   const offline = !navigator.onLine;
   const blocked = offline || needsKey(c) || !c.model;
+  const w = writerCfg();
+  const wBad = writerCfgBad(w);
   $('#ai-run').disabled = blocked;
-  $('#ai-enhance').disabled = blocked;
+  $('#ai-enhance').disabled = blocked || wBad; // 編劇另設但沒設完整,只擋「劇本強化」
   $('#ai-quick-run').disabled = blocked;
   $('#ai-status').textContent = offline ? '離線中:AI 需要網路(其餘功能照常離線可用)。'
     : needsKey(c) ? '先展開上方「連線設定」填 API Key(只存這台裝置,不會進草稿或分享連結)。'
-    : !c.model ? '先展開上方「連線設定」填 Model 名稱。' : '';
+    : !c.model ? '先展開上方「連線設定」填 Model 名稱。'
+    : wBad ? '編劇模型設定不完整(缺 Model 或 Key),補完或 Provider 改回「同執行設定」。' : '';
   $('#ai-settings-summary').textContent = blocked && !offline
     ? '連線設定(尚未設定,點開填 API Key)'
-    : `連線設定(${PROVIDERS[c.provider].label} · ${c.model})`;
+    : `連線設定(${PROVIDERS[c.provider].label} · ${c.model}${w ? ` / 編劇:${PROVIDERS[w.provider].label} · ${w.model || '未填'}` : ''})`;
 }
 // 劇本跟著草稿走(localStorage per draft id,不進 state:分享連結與匯出不帶劇本)
 function screenplayLoad() { try { $('#ai-screenplay-text').value = localStorage.getItem('lcm-screenplay-' + currentId) || ''; } catch (e) {} }
@@ -306,6 +316,16 @@ function fillCfgForm() {
   $('#ai-model').value = c.model || '';
   $('#ai-key').value = c.key || '';
   $('#ai-loops').value = Math.min(50, Math.max(3, +c.loops || 10));
+  const wsel = $('#ai-w-provider');
+  if (!wsel.options.length) {
+    const same = document.createElement('option'); same.value = ''; same.textContent = '同執行設定'; wsel.appendChild(same);
+    for (const [id, p] of Object.entries(PROVIDERS)) { const o = document.createElement('option'); o.value = id; o.textContent = p.label; wsel.appendChild(o); }
+  }
+  wsel.value = PROVIDERS[c.wProvider] ? c.wProvider : '';
+  $('#ai-w-fields').hidden = !wsel.value;
+  $('#ai-w-base').value = c.wBase || '';
+  $('#ai-w-model').value = c.wModel || '';
+  $('#ai-w-key').value = c.wKey || '';
   updateGate();
 }
 function setBusy(on) {
@@ -321,9 +341,15 @@ $('#ai-provider').addEventListener('change', (e) => {
   saveCfg({ ...cfg(), provider: e.target.value, base: p.base, model: p.model });
   fillCfgForm();
 });
-for (const [id, key] of [['#ai-base', 'base'], ['#ai-model', 'model'], ['#ai-key', 'key'], ['#ai-loops', 'loops']]) {
+for (const [id, key] of [['#ai-base', 'base'], ['#ai-model', 'model'], ['#ai-key', 'key'], ['#ai-loops', 'loops'], ['#ai-w-base', 'wBase'], ['#ai-w-model', 'wModel'], ['#ai-w-key', 'wKey']]) {
   $(id).addEventListener('input', (e) => { saveCfg({ ...cfg(), [key]: e.target.value.trim() }); updateGate(); });
 }
+$('#ai-w-provider').addEventListener('change', (e) => {
+  const id = e.target.value;
+  const p = PROVIDERS[id];
+  saveCfg({ ...cfg(), wProvider: id, wBase: p ? p.base : '', wModel: p ? p.model : '', wKey: id ? cfg().wKey || '' : '' });
+  fillCfgForm();
+});
 $('#ai-enhance').addEventListener('click', async () => { // 第 1 段:發想與充實劇本(可反覆)
   const prompt = $('#ai-prompt').value.trim();
   const existing = $('#ai-screenplay-text').value.trim();
