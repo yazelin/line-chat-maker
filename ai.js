@@ -402,7 +402,13 @@ async function refreshQuota() {
 // ── AI 補圖:格盤一次生成 → 自動切回(幾何=程式碼,內容=美術指導 AI;走 worker 代理的 codex-image-service) ──
 const PROXY_BASE = PROVIDERS.free.base;
 let imgAbort = false;
-function imgCfg() { const c = cfg(); return { provider: c.imgProvider === 'gemini' ? 'gemini' : 'free', key: c.imgKey || '' }; }
+function imgCfg() { const c = cfg(); return { provider: ['gemini', 'codex', 'openai'].includes(c.imgProvider) ? c.imgProvider : 'free', key: c.imgKey || '' }; }
+function b64ToBitmap(b64, mime) {
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return createImageBitmap(new Blob([arr], { type: mime || 'image/png' }));
+}
 async function geminiImage(prompt, size) { // 自帶 Gemini key 生圖(不吃站長額度)
   const c = cfg();
   const key = imgCfg().key || (c.wProvider === 'gemini' ? c.wKey : '') || (c.provider === 'gemini' ? c.key : '');
@@ -418,13 +424,50 @@ async function geminiImage(prompt, size) { // 自帶 Gemini key 生圖(不吃站
   const parts = (((d.candidates || [])[0] || {}).content || {}).parts || [];
   const part = parts.find((p) => p.inlineData);
   if (!part) throw new Error('Gemini 沒有回傳圖片。');
-  const bin = atob(part.inlineData.data);
-  const arr = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
-  return createImageBitmap(new Blob([arr], { type: part.inlineData.mimeType || 'image/png' }));
+  return b64ToBitmap(part.inlineData.data, part.inlineData.mimeType);
 }
-async function generateBitmap(prompt, size) { // 生圖路由:站長贊助(worker 代理)或自帶 Gemini
-  if (imgCfg().provider === 'gemini') { log('生圖:Gemini(自帶 key,不吃每日限量)…'); return geminiImage(prompt, size); }
+async function codexImage(prompt, size) { // 自架 codex-image-service(跟站長同款後端,自己的 base+cimg key)
+  const c = cfg();
+  const base = String(c.imgBase || '').replace(/\/+$/, '');
+  if (!base || !c.imgKey) throw new Error('請在「圖像生成」填自架服務的 Base URL 與 cimg API Key。');
+  const auth = { authorization: 'Bearer ' + c.imgKey };
+  const r = await fetch(base + '/v1/images/jobs', { method: 'POST', headers: { 'content-type': 'application/json', ...auth }, body: JSON.stringify({ prompt, size, quality: 'medium', count: 1 }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.detail || (d.error && d.error.message) || 'HTTP ' + r.status);
+  for (let i = 0; i < 120; i++) {
+    await new Promise((s) => setTimeout(s, 5000));
+    if (imgAbort) { const e = new Error('已停止。'); e.name = 'AbortError'; throw e; }
+    const pr = await fetch(base + '/v1/images/jobs/' + d.id, { headers: auth });
+    const pd = await pr.json().catch(() => ({}));
+    if (pd.status === 'succeeded') {
+      const ir = await fetch(pd.images[0].url);
+      if (!ir.ok) throw new Error('下載成品失敗(HTTP ' + ir.status + ')');
+      return createImageBitmap(await ir.blob());
+    }
+    if (pd.status === 'failed' || pd.status === 'expired') throw new Error('生圖失敗:' + (pd.error || pd.status));
+    if (i % 6 === 5) log(`生成中…(約 ${(i + 1) * 5} 秒)`);
+  }
+  throw new Error('生圖逾時。');
+}
+async function openaiImage(prompt, size) { // OpenAI 官方繪圖 API(自帶 key)
+  const c = cfg();
+  if (!c.imgKey) throw new Error('請在「圖像生成」填 OpenAI API Key。');
+  const r = await fetch('https://api.openai.com/v1/images/generations', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: 'Bearer ' + c.imgKey },
+    body: JSON.stringify({ model: (c.imgModel || 'gpt-image-1').trim(), prompt, size, n: 1 }),
+  });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error((d.error && d.error.message) || 'HTTP ' + r.status);
+  const b64 = d.data && d.data[0] && d.data[0].b64_json;
+  if (!b64) throw new Error('OpenAI 沒有回傳圖片。');
+  return b64ToBitmap(b64, 'image/png');
+}
+async function generateBitmap(prompt, size) { // 生圖路由:站長贊助(worker 代理)/自帶 Gemini/自架 codex/OpenAI
+  const p = imgCfg().provider;
+  if (p === 'gemini') { log('生圖:Gemini(自帶 key,不吃每日限量)…'); return geminiImage(prompt, size); }
+  if (p === 'codex') { log('生圖:自架 codex-image-service…'); return codexImage(prompt, size); }
+  if (p === 'openai') { log('生圖:OpenAI 繪圖 API…'); return openaiImage(prompt, size); }
   const jobId = await createImageJob(prompt, size);
   const url = await waitImageJob(jobId);
   return fetchGeneratedBitmap(url);
@@ -586,9 +629,21 @@ function fillCfgForm() {
   $('#ai-w-base').value = c.wBase || '';
   $('#ai-w-model').value = c.wModel || '';
   $('#ai-w-key').value = c.wKey || '';
-  $('#ai-img-provider').value = c.imgProvider === 'gemini' ? 'gemini' : 'free';
-  $('#ai-img-fields').hidden = c.imgProvider !== 'gemini';
-  $('#ai-img-key').value = c.imgKey || '';
+  { // 圖像生成:依來源切欄位與提示
+    const ip = imgCfg().provider;
+    $('#ai-img-provider').value = ip;
+    $('#ai-img-fields').hidden = ip === 'free';
+    $('#ai-img-base-row').hidden = ip !== 'codex';
+    $('#ai-img-model-row').hidden = ip !== 'openai';
+    $('#ai-img-base').value = c.imgBase || '';
+    $('#ai-img-model').value = c.imgModel || (ip === 'openai' ? 'gpt-image-1' : '');
+    $('#ai-img-key').value = c.imgKey || '';
+    $('#ai-img-key-label').textContent = ip === 'codex' ? 'cimg API Key' : ip === 'openai' ? 'OpenAI API Key' : 'Gemini API Key(留空=沿用編劇或執行的 Gemini key)';
+    $('#ai-img-hint').textContent = ip === 'codex'
+      ? '跟本站同款的自架後端(repo:codex-image-service);你的服務要允許本站的 CORS(nginx 加 Access-Control-Allow-Origin 等,參考該 repo 部署說明)。'
+      : ip === 'openai' ? '直接呼叫 api.openai.com(計費照你的 OpenAI 帳號);key 只存這台裝置。'
+      : ip === 'gemini' ? 'key 只存這台裝置;免費額度依 Google 帳號。' : '';
+  }
   updateGate();
 }
 function setBusy(on) {
@@ -611,7 +666,7 @@ $('#ai-img-provider').addEventListener('change', (e) => {
   fillCfgForm();
   refreshQuota();
 });
-for (const [id, key] of [['#ai-base', 'base'], ['#ai-model', 'model'], ['#ai-key', 'key'], ['#ai-loops', 'loops'], ['#ai-w-base', 'wBase'], ['#ai-w-model', 'wModel'], ['#ai-w-key', 'wKey'], ['#ai-img-key', 'imgKey']]) {
+for (const [id, key] of [['#ai-base', 'base'], ['#ai-model', 'model'], ['#ai-key', 'key'], ['#ai-loops', 'loops'], ['#ai-w-base', 'wBase'], ['#ai-w-model', 'wModel'], ['#ai-w-key', 'wKey'], ['#ai-img-key', 'imgKey'], ['#ai-img-base', 'imgBase'], ['#ai-img-model', 'imgModel']]) {
   $(id).addEventListener('input', (e) => { saveCfg({ ...cfg(), [key]: e.target.value.trim() }); updateGate(); });
 }
 $('#ai-w-provider').addEventListener('change', (e) => {
