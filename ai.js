@@ -102,6 +102,7 @@ schema 重點:
 
 規則:
 - 一律使用繁體中文(zh-TW)回覆。
+- 你的第一個回應必須是工具呼叫,不可以只回覆文字、規劃或思考過程;所有思考直接化為工具行動。
 - 收到任務直接用工具完成,不要反問、不要只給建議或範例;改完用一句話回報結果。
 - 填入大量訊息時務必分批:先用 apply_script 放 settings、people 與前幾則訊息,之後用 append_messages 每批最多 8 則補完;單次工具參數過長容易格式出錯。
 - 對話內容要自然口語像真人閒聊,每個人物講話風格一致;適度用貼圖、已讀、時間差說故事。
@@ -214,7 +215,8 @@ async function runAgent(prompt, screenplay, quick) {
   const task = quick
     ? QUICK_GUIDE + '\n\n使用者的微調指令:' + prompt
     : screenplay
-      ? '使用者原始需求:' + (prompt || '(見劇本)') + '\n\n以下是使用者定稿的劇本,你的工作是把它詳實填入腳本 JSON(settings/people/messages),忠於劇本的每一則對話、時間、已讀與形式安排,不要自行改劇情:\n' + screenplay
+      ? '使用者原始需求:' + (prompt || '(見劇本)') + '\n\n以下是使用者定稿的劇本,你的工作是把它詳實填入腳本 JSON(settings/people/messages),忠於劇本的每一則對話、時間、已讀與形式安排,不要自行改劇情:\n' + screenplay +
+        '\n\n(劇本結束。現在直接呼叫 apply_script 開始填入,先放 settings/people 與前幾則,再用 append_messages 分批補完;不要輸出文字。)'
       : '使用者任務:' + prompt;
   const msgs = [
     { role: 'system', content: SYSTEM },
