@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, font: '', sysColor: '#2d3b4e', theme: 'light', aiFab: true, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, font: '', sysColor: '#2d3b4e', theme: 'light', aiFab: true, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, sbAlarm: true, sbArrows: true, sbVolte: true, sbSignal: true, sbBatt: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -149,6 +149,14 @@ function render() {
   $('#set-wifi').checked = !!st.wifi;
   $('#set-battery').value = st.battery; $('#battery-val').textContent = st.battery;
   $('#set-batttext').checked = !!st.battText;
+  { // 系統圖示各項開關(舊草稿沒這些 key,undefined 視為開)+ 總開關三態
+    const on = { alarm: st.sbAlarm !== false, wifi: !!st.wifi, arrows: st.sbArrows !== false, volte: st.sbVolte !== false, signal: st.sbSignal !== false, batt: st.sbBatt !== false };
+    for (const k of ['alarm', 'arrows', 'volte', 'signal', 'batt']) $('#set-sb-' + k).checked = on[k];
+    const vals = Object.values(on);
+    const all = $('#set-sb-all');
+    all.checked = vals.every(Boolean);
+    all.indeterminate = !all.checked && vals.some(Boolean);
+  }
   $('#set-glow').value = st.glow; $('#glow-val').textContent = st.glow;
   $('#set-glowcolor').value = st.glowColor || '#96b9ff';
   $('#set-darkui').checked = !!st.darkUI;
@@ -223,8 +231,13 @@ function render() {
   $('#batt-fill-a').setAttribute('height', String(bh));
   $('#batt-fill-a').setAttribute('y', String(4.6 + 9.6 - bh));
   $('#batt-text-a').textContent = st.battery + '%';
-  $('#batt-text-a').style.display = st.battText ? '' : 'none';
+  $('#batt-text-a').style.display = st.battText && st.sbBatt !== false ? '' : 'none';
   $('#sig-a-fill').style.clipPath = 'inset(0 ' + (4 - st.signal) * 25 + '% 0 0)'; // 楔形依格數裁切
+  $('#alarm-a').style.display = st.sbAlarm !== false ? '' : 'none';
+  $('#arrows-a').style.display = st.sbArrows !== false ? '' : 'none';
+  $('#volte-a').style.display = st.sbVolte !== false ? '' : 'none';
+  $('#sig-a').style.display = st.sbSignal !== false ? '' : 'none';
+  $('#batt-a').style.display = st.sbBatt !== false ? '' : 'none';
   if ($('#draft').textContent !== (st.draft || '')) $('#draft').textContent = st.draft || '';
   $('#set-announce').checked = !!st.announceOn;
   $('#set-embplay').checked = !!st.embedAutoplay;
@@ -413,6 +426,16 @@ $('#set-buttons').addEventListener('change', (e) => { state.settings.buttons = e
 $('#set-homebar').addEventListener('change', (e) => { state.settings.homebar = e.target.checked; save(); render(); });
 $('#set-signal').addEventListener('input', (e) => { state.settings.signal = +e.target.value; save(); render(); });
 $('#set-wifi').addEventListener('change', (e) => { state.settings.wifi = e.target.checked; save(); render(); });
+$('#set-sb-alarm').addEventListener('change', (e) => { state.settings.sbAlarm = e.target.checked; save(); render(); });
+$('#set-sb-arrows').addEventListener('change', (e) => { state.settings.sbArrows = e.target.checked; save(); render(); });
+$('#set-sb-volte').addEventListener('change', (e) => { state.settings.sbVolte = e.target.checked; save(); render(); });
+$('#set-sb-signal').addEventListener('change', (e) => { state.settings.sbSignal = e.target.checked; save(); render(); });
+$('#set-sb-batt').addEventListener('change', (e) => { state.settings.sbBatt = e.target.checked; save(); render(); });
+$('#set-sb-all').addEventListener('change', (e) => {
+  const v = e.target.checked;
+  Object.assign(state.settings, { sbAlarm: v, wifi: v, sbArrows: v, sbVolte: v, sbSignal: v, sbBatt: v });
+  save(); render();
+});
 $('#set-battery').addEventListener('input', (e) => { state.settings.battery = +e.target.value; save(); render(); });
 $('#set-batttext').addEventListener('change', (e) => { state.settings.battText = e.target.checked; save(); render(); });
 $('#set-glow').addEventListener('input', (e) => { state.settings.glow = +e.target.value; save(); render(); });
