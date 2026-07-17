@@ -533,11 +533,11 @@ $('#file-avatar').addEventListener('change', (e) => {
   e.target.value = '';
 });
 
-// ── 隱形識別三層:iTXt metadata + alpha-LSB 藏字串 + ±2 亮度格紋 ──
+// ── 隱形識別三層:iTXt metadata + alpha-LSB 藏字串 + 平滑藍場紋 ──
 // 對外只承諾「提高濫用成本、可供識別」;開源工具擋不住有心人。驗證頁:verify.html
 // 格紋用座標偽隨機而非文字遮罩:字型渲染跨平台不一致,幾何格紋才能在驗證端位元級重現
 const BRAND_TEXT = 'LCM1|line-chat-maker 示意圖(非真實對話)|https://yazelin.github.io/line-chat-maker/';
-function blockSign(i, j) { // 16px 格 → ±1;pattern 週期 8 格(128px),裁切後可搜尋比對
+function blockSign(i, j) { // 場紋節點 ±1;週期 8 節點(128px),裁切後可搜尋比對
   let h = Math.imul((i & 7) + 1, 73856093) ^ Math.imul((j & 7) + 1, 19349663);
   h = Math.imul(h ^ (h >>> 13), 0x5bd1e995);
   return ((h ^ (h >>> 15)) & 1) ? 1 : -1;
@@ -546,11 +546,24 @@ function brandPixels(canvas) {
   const ctx = canvas.getContext('2d');
   const W = canvas.width, H = canvas.height;
   const im = ctx.getImageData(0, 0, W, H), d = im.data;
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const p = (y * W + x) * 4;
-    if (d[p + 3] < 250) continue; // 半透明像素 premultiply 會失真,跳過
-    const s = blockSign(x >> 4, y >> 4) * 3;
-    for (let c = 0; c < 3; c++) { const v = d[p + c] + s; d[p + c] = v < 0 ? 0 : v > 255 ? 255 : v; }
+  // 場紋:16px 節點 ±1 → smoothstep 雙線性內插成平滑場,只動藍色通道 ±3
+  // 硬邊格紋在平坦底色會 banding(實測肉眼可見);平滑消除邊緣、藍通道利用人眼對藍的低解析度
+  const ss = (t) => t * t * (3 - 2 * t);
+  const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5]; // 4x4 有序抖動:round 會產生量化等高線(平坦底色可見),抖散成高頻微噪;區塊均值不變
+  const nCols = (W >> 4) + 2;
+  const rowA = new Float64Array(nCols), rowB = new Float64Array(nCols);
+  for (let y = 0; y < H; y++) {
+    const gy = y >> 4;
+    if ((y & 15) === 0 || y === 0) for (let g = 0; g < nCols; g++) { rowA[g] = blockSign(g, gy); rowB[g] = blockSign(g, gy + 1); }
+    const fy = ss(((y & 15) + 0.5) / 16);
+    for (let x = 0; x < W; x++) {
+      const p = (y * W + x) * 4;
+      if (d[p + 3] < 250) continue; // 半透明像素 premultiply 會失真,跳過
+      const gx = x >> 4, fx = ss(((x & 15) + 0.5) / 16);
+      const s = (rowA[gx] * (1 - fx) + rowA[gx + 1] * fx) * (1 - fy) + (rowB[gx] * (1 - fx) + rowB[gx + 1] * fx) * fy;
+      const v = d[p + 2] + Math.floor(2 * s + (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16);
+      d[p + 2] = v < 0 ? 0 : v > 255 ? 255 : v;
+    }
   }
   const bytes = new TextEncoder().encode(BRAND_TEXT); // alpha LSB:2 bytes 長度 + UTF-8
   const all = [(bytes.length >> 8) & 255, bytes.length & 255, ...bytes];
