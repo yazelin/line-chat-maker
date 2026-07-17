@@ -643,6 +643,128 @@ async function renderCanvasFallback() {
   });
 }
 
+// ── 匯出 MP4:重演播放時序,逐關鍵幀 foreignObject 渲染 → WebCodecs H.264 → mp4-muxer 封裝(離線編碼,比即時播放快) ──
+let _exportCss = null;
+async function exportFrameCanvas(scale, fixedW, fixedH) {
+  const src = $('#phone-wrap');
+  const w = src.offsetWidth, h = src.offsetHeight;
+  const st = state.settings;
+  let pad = 44;
+  if (st.frameLevel === 'phone') pad = Math.max(pad, 96);
+  if (st.glow > 0) pad = Math.max(pad, st.glow + 20);
+  if (st.backlight > 0) pad = Math.max(pad, 210);
+  if (!_exportCss) _exportCss = await (await fetch('style.css')).text();
+  const clone = cleanClone();
+  const chat = clone.querySelector('.line-chat');
+  const sTop = chatEl.scrollTop;
+  if (chat && sTop > 0) { // 序列化不保留 scrollTop:包一層 translateY 模擬捲動
+    const wrap = document.createElement('div');
+    while (chat.firstChild) wrap.appendChild(chat.firstChild);
+    wrap.style.transform = `translateY(-${sTop}px)`;
+    chat.appendChild(wrap);
+    chat.style.overflow = 'hidden';
+  }
+  const wrapEl = document.createElement('div');
+  wrapEl.setAttribute('style', `--accent:#06c755;--fg:#1c1917;--muted:#6b6560;--border:#e5e2de;padding:${pad}px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC','Microsoft JhengHei',sans-serif;line-height:1.6;color:#1c1917;`);
+  const styleEl = document.createElement('style');
+  styleEl.textContent = _exportCss;
+  wrapEl.appendChild(styleEl);
+  wrapEl.appendChild(clone);
+  const xhtml = new XMLSerializer().serializeToString(wrapEl);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${(w + pad * 2) * scale}" height="${(h + pad * 2) * scale}" viewBox="0 0 ${w + pad * 2} ${h + pad * 2}"><foreignObject width="${w + pad * 2}" height="${h + pad * 2}">${xhtml}</foreignObject></svg>`;
+  const img = new Image();
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  await img.decode();
+  const canvas = document.createElement('canvas');
+  canvas.width = fixedW; canvas.height = fixedH;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#faf9f7'; ctx.fillRect(0, 0, fixedW, fixedH); // 尺寸微差時的底色
+  ctx.drawImage(img, 0, 0, (w + pad * 2) * scale, (h + pad * 2) * scale);
+  if (st.watermark) {
+    const wp = Math.round(fixedW / 20);
+    ctx.font = `${Math.round(fixedW / 30)}px sans-serif`;
+    ctx.textAlign = 'right';
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillText('示意圖', fixedW - wp + 2, fixedH - wp + 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillText('示意圖', fixedW - wp, fixedH - wp);
+  }
+  return canvas;
+}
+$('#export-mp4').addEventListener('click', async () => {
+  if (!('VideoEncoder' in window) || typeof Mp4Muxer === 'undefined') { alert('匯出 MP4 需要支援 WebCodecs 的瀏覽器(建議 Chrome / Edge)。'); return; }
+  const btn = $('#export-mp4');
+  const oldLabel = btn.textContent;
+  btn.disabled = true;
+  const nodes = Array.from(chatEl.children);
+  const draftEl = $('#draft');
+  const draftText = state.settings.draft || '';
+  try {
+    _exportCss = null;
+    // 尺寸鎖定:量「完整草稿」狀態的大小,打字過程用 minHeight 撐住輸入列,整片影片同一解析度
+    const draftH = draftEl.offsetHeight;
+    const src = $('#phone-wrap');
+    const st = state.settings;
+    let pad = 44;
+    if (st.frameLevel === 'phone') pad = Math.max(pad, 96);
+    if (st.glow > 0) pad = Math.max(pad, st.glow + 20);
+    if (st.backlight > 0) pad = Math.max(pad, 210);
+    const rawW = src.offsetWidth + pad * 2, rawH = src.offsetHeight + pad * 2;
+    let scale = Math.min(2, Math.sqrt(8_000_000 / (rawW * rawH)), 4000 / rawW, 4000 / rawH); // H.264 級別與硬體編碼上限
+    const W = Math.floor(rawW * scale / 2) * 2, H = Math.floor(rawH * scale / 2) * 2;
+    // 時序表(與播放一致):開場停 0.8s → 每則 0.65s → 停 0.7s → 草稿 75ms/字 → 收尾 1.5s
+    const steps = [{ hold: 800, apply() { nodes.forEach((n) => { n.style.visibility = 'hidden'; n.classList.remove('appear'); }); if (draftText) { draftEl.style.minHeight = draftH + 'px'; draftEl.textContent = ''; } chatEl.scrollTop = 0; } }];
+    nodes.forEach((n) => steps.push({ hold: 650, apply() {
+      n.style.visibility = '';
+      const nb = n.getBoundingClientRect(), cb = chatEl.getBoundingClientRect();
+      if (nb.bottom > cb.bottom) chatEl.scrollTop += nb.bottom - cb.bottom;
+    } }));
+    if (draftText) {
+      steps.push({ hold: 700, apply() {} });
+      for (let i = 1; i <= draftText.length; i++) { const k = i; steps.push({ hold: 75, apply() { draftEl.textContent = draftText.slice(0, k); } }); }
+    }
+    steps.push({ hold: 1500, apply() {} });
+
+    const muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: 'avc', width: W, height: H }, fastStart: 'in-memory' });
+    let encErr = null;
+    const encoder = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { encErr = e; } });
+    encoder.configure({ codec: 'avc1.640033', width: W, height: H, bitrate: 6_000_000 });
+    let tUs = 0;
+    let lastCanvas = null;
+    for (let i = 0; i < steps.length; i++) {
+      steps[i].apply();
+      lastCanvas = await exportFrameCanvas(scale, W, H);
+      const frame = new VideoFrame(lastCanvas, { timestamp: tUs, duration: steps[i].hold * 1000 });
+      encoder.encode(frame, { keyFrame: i % 10 === 0 });
+      frame.close();
+      tUs += steps[i].hold * 1000;
+      if (encErr) throw encErr;
+      btn.textContent = `匯出中 ${i + 1}/${steps.length}`;
+      await new Promise((r) => setTimeout(r, 0));
+    }
+    { // mp4 總長=最後一幀的 timestamp:多墊一幀,收尾停留才不會被吃掉
+      const frame = new VideoFrame(lastCanvas, { timestamp: tUs, duration: 33_000 });
+      encoder.encode(frame, { keyFrame: false });
+      frame.close();
+      tUs += 33_000;
+    }
+    await encoder.flush();
+    muxer.finalize();
+    const blob = new Blob([muxer.target.buffer], { type: 'video/mp4' });
+    const a = document.createElement('a');
+    a.download = 'line-chat.mp4';
+    a.href = URL.createObjectURL(blob);
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 30_000);
+    toast(`MP4 已匯出(${Math.round(tUs / 1e6)} 秒,${W}x${H},無聲;隱形識別標記是 PNG 專屬,影片僅帶可見浮水印)`);
+  } catch (e) {
+    console.warn('MP4 匯出失敗', e);
+    alert('MP4 匯出失敗:' + ((e && e.message) || e));
+  }
+  draftEl.style.minHeight = '';
+  btn.disabled = false;
+  btn.textContent = oldLabel;
+  render();
+});
+
 $('#export-png').addEventListener('click', async () => {
   let canvas;
   try { canvas = await renderCanvasNative(); }
