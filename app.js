@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, font: '', sysColor: '#2d3b4e', theme: 'light', aiFab: true, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, sbAlarm: true, sbArrows: true, sbVolte: true, sbSignal: true, sbBatt: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, font: '', sysColor: '#2d3b4e', theme: 'light', aiFab: true, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, wmText: 'LINE 對話製造機', clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, sbAlarm: true, sbArrows: true, sbVolte: true, sbSignal: true, sbBatt: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -121,6 +121,7 @@ async function boot() {
 }
 
 const $ = (sel) => document.querySelector(sel);
+const wmText = () => (state.settings.wmText || '').trim() || 'LINE 對話製造機';
 const chatEl = $('#chat');
 
 function glowShadow(st) {
@@ -143,7 +144,9 @@ function render() {
   $('#set-buttons').checked = !!st.buttons;
   $('#set-homebar').checked = !!st.homebar;
   $('#set-watermark').checked = !!st.watermark;
+  $('#set-wmtext').value = st.wmText === undefined ? 'LINE 對話製造機' : st.wmText;
   $('#wm-preview').style.display = st.watermark ? '' : 'none';
+  $('#wm-preview').textContent = wmText();
   $('#set-clock').value = st.clock;
   $('#set-signal').value = st.signal; $('#signal-val').textContent = st.signal + '/4';
   $('#set-wifi').checked = !!st.wifi;
@@ -451,6 +454,7 @@ $('#announce-text').addEventListener('input', () => { state.settings.announce = 
 $('#set-bgimg').addEventListener('click', () => { bgTarget = true; $('#file-avatar').click(); });
 $('#clear-bgimg').addEventListener('click', () => { state.settings.bgImage = null; save(); render(); });
 $('#set-watermark').addEventListener('change', (e) => { state.settings.watermark = e.target.checked; save(); render(); });
+$('#set-wmtext').addEventListener('input', (e) => { state.settings.wmText = e.target.value; save(); render(); });
 $('#set-clock').addEventListener('input', (e) => { state.settings.clock = e.target.value; save(); render(); });
 $('#set-height').addEventListener('change', (e) => { state.settings.height = e.target.value; save(); render(); });
 $('#set-mode').addEventListener('change', (e) => { state.settings.mode = e.target.value; save(); render(); });
@@ -684,8 +688,8 @@ async function exportFrameCanvas(scale, fixedW, fixedH) {
     const wp = Math.round(fixedW / 20);
     ctx.font = `${Math.round(fixedW / 30)}px sans-serif`;
     ctx.textAlign = 'right';
-    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillText('示意圖', fixedW - wp + 2, fixedH - wp + 2);
-    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillText('示意圖', fixedW - wp, fixedH - wp);
+    ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillText(wmText(), fixedW - wp + 2, fixedH - wp + 2);
+    ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillText(wmText(), fixedW - wp, fixedH - wp);
   }
   return canvas;
 }
@@ -794,9 +798,9 @@ $('#export-png').addEventListener('click', async () => {
     ctx.font = `${Math.round(canvas.width / 30)}px sans-serif`;
     ctx.textAlign = 'right';
     ctx.fillStyle = 'rgba(255,255,255,0.75)';
-    ctx.fillText('示意圖', canvas.width - pad + 2, canvas.height - pad + 2);
+    ctx.fillText(wmText(), canvas.width - pad + 2, canvas.height - pad + 2);
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillText('示意圖', canvas.width - pad, canvas.height - pad);
+    ctx.fillText(wmText(), canvas.width - pad, canvas.height - pad);
   }
   brandPixels(canvas);
   const a = document.createElement('a');
@@ -818,7 +822,7 @@ $('#export-html').addEventListener('click', async () => {
     return sels.map((s) => '.lcm-embed ' + s).join(',') + '{' + chunk.slice(i + 1) + '}';
   }).filter(Boolean).join('\n');
   const clone = cleanClone();
-  const wm = state.settings.watermark ? '<div style="text-align:right;font:12px/1.6 sans-serif;color:rgba(0,0,0,0.45)">示意圖</div>' : '';
+  const wm = state.settings.watermark ? '<div style="text-align:right;font:12px/1.6 sans-serif;color:rgba(0,0,0,0.45)">' + wmText().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' : '';
   const reset = '.lcm-embed *{margin:0;padding:0;border:0;border-radius:0;box-shadow:none;box-sizing:border-box;background:none;font:inherit;color:inherit;}';
   const autoplay = !!state.settings.embedAutoplay;
   const embJs = `<script>(function(){var s=document.currentScript,r=s.closest('.lcm-embed');s.remove();var c=r.querySelector('.line-chat');function bottom(){if(c)c.scrollTop=c.scrollHeight}bottom();${autoplay ? "var ms=[].slice.call(r.querySelectorAll('.line-chat>div'));var f=r.querySelector('.fakein'),dt=f?f.textContent:'';var playing=false;function play(){if(playing)return;playing=true;ms.forEach(function(m){m.style.visibility='hidden';m.style.animation='none'});if(f&&dt)f.textContent='';if(c)c.scrollTop=0;var i=0;(function st(){if(i>=ms.length){if(f&&dt){var j=0;setTimeout(function tp(){if(j<dt.length){f.textContent=dt.slice(0,++j);setTimeout(tp,75)}else{playing=false}},700)}else{playing=false}return}var m=ms[i++];m.style.visibility='';void m.offsetWidth;m.style.animation='lcmIn .3s ease-out';if(c){var nb=m.getBoundingClientRect(),qb=c.getBoundingClientRect();if(nb.bottom>qb.bottom)c.scrollTop+=nb.bottom-qb.bottom}setTimeout(st,650)})()}var io=new IntersectionObserver(function(en){if(en[en.length-1].isIntersecting)play()},{threshold:0.4});io.observe(r);" : ''}})();<\/script>`;
