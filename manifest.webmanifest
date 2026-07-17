@@ -1,7 +1,7 @@
 {
   "name": "LINE 對話製造機",
   "short_name": "對話製造機",
-  "description": "免費、離線的 LINE 風格對話截圖產生器,僅供創作示意。",
+  "description": "免費、離線的 LINE 風格對話產生器:創意梗圖、產品展示、教學示意,僅供創作。",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#faf9f7",
