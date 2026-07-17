@@ -102,6 +102,7 @@ const SYSTEM = `你是「LINE 對話製造機」網頁內建的 AI 助手,幫創
 
 schema 重點:
 - settings:title(聊天室名稱)、members(0=不顯示)、bg(背景色)、mode("group"|"dm")、theme("light"|"dark")、clock(狀態列時間)、frameLevel("phone"|"screen"|"chat")、watermark、height("auto"|"fixed")、heightPx、draft(輸入框未送出文字)、announceOn/announce(置頂公告)。只改需要的欄位。
+- mode:"dm"(1對1)時 title 必須=對方(左側那位)的名字、members 給 0;mode:"group" 時 title=群組名稱、members 給合理人數。
 - people:[{id,name,avatar}],avatar 是圖片(@imgN 佔位符或 null=灰底圓)。
 - messages 依序渲染:
   {"type":"date","text":"7月15日 (三)"} 日期分隔
@@ -148,6 +149,10 @@ const WRITER_SYSTEM = `你是資深編劇,專為「LINE 對話截圖」這種形
 - 非文字訊息是正當的訊息類型(不是舞台指示),用方括號記法,鼓勵多用來說故事:
   小亮:[貼圖:賊笑的貓]/小雯:[圖片:海邊夕陽]/小亮:[語音 0:12:大意是道歉]/小雯:[檔案:企劃書.pdf 2.4MB]
   一段好對話通常穿插 2-3 種非文字訊息,只有純文字會太乾。
+聊天室設定:1對1(dm)時標題=對方的名字、不顯示成員數;群組時標題=一個像真的群組名+合理成員數,置頂公告是群組限定的武器。
+
+以上規則只管格式,不管膽子——劇情要敢:誤會、反轉、翻車、告白、神來一筆的貼圖時機、最後一句停在草稿的懸念。平庸安全、只有寒暄問答的劇本會被評審退件;寧可戲劇化一點,也不要乾。
+
 寫出完整劇本,包含:
 1. 角色設定:每人的個性、說話習慣(語助詞/標點/長短句)
 2. 逐則對話:誰說/內容/時間(照「下午4:06」慣例遞增)/已讀狀態/用到的形式武器
@@ -157,6 +162,7 @@ const CRITIC_SYSTEM = `你是嚴格的 LINE 對話劇本評審。對劇本五項
 1 arc 劇情弧(起因→升溫→高潮→收尾完整) 2 voice 角色聲音(口氣一致且彼此區分)
 3 form 形式運用(已讀不回/時間差/日期分隔/貼圖/引用/react/draft 至少巧用三種且服務劇情)
 4 pacing 節奏(留白與密集交錯,高潮前有鋪陳) 5 real 真實感(像真人打字的口語與短句)
+平淡無起伏、只有寒暄問答、沒有任何意外或情緒轉折的劇本,arc 與 pacing 不得超過 6;純文字沒穿插貼圖/圖片/語音等非文字訊息的,form 不得超過 6。
 只回傳 JSON:{"scores":{"arc":n,"voice":n,"form":n,"pacing":n,"real":n},"total":n,"pass":true|false,"feedback":"具體可執行的修改指示"}
 pass 條件:total>=40 且每項>=6。`;
 const IDEAS = [
