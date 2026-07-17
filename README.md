@@ -25,7 +25,7 @@
 
 三條路，同一份腳本 JSON：
 
-1. **內建 AI 助手**（`ai.js`）：網頁「AI」分頁直接下指令。工具對到 app 的 state 操作（`get_script`/`apply_script`/`append_messages`/`export_png`），OpenAI 相容 tool-calling 迴圈（首輪強制工具＋反偷懶＋迴圈上限可調，預設 15）。**協助創作**：小提示也會被展開成完整規格（角色、劇情弧、敘事手法）生成初稿，且每次修改後強制自審（檢查清單重讀腳本），不合格自行再修，直到完成整個作品。圖片以 `@imgN` 佔位符進出模型不會弄丟；執行前自動快照，可一鍵還原；設定與 Key 只存 localStorage。
+1. **內建 AI 助手**（`ai.js`）：網頁「AI」分頁直接下指令。工具對到 app 的 state 操作（`get_script`/`apply_script`/`append_messages`/`export_png`），OpenAI 相容 tool-calling 迴圈（首輪強制工具＋反偷懶＋迴圈上限可調，預設 15）。**協助創作**：小提示也會被展開成完整規格（角色、劇情弧、敘事手法）生成初稿，且每次修改後強制自審（檢查清單重讀腳本），不合格自行再修，直到完成整個作品。**編劇模式**（預設開）進一步把創意與執行分離：編劇 AI 先寫完整劇本（針對 LINE 形式的武器：已讀不回、時間跳躍、draft、貼圖…）→ 評審 AI 五項評分（劇情弧/角色聲音/形式運用/節奏/真實感，總分 ≥40/50 且無單項 <6 才過，最多修 3 輪）→ 執行 AI 只負責把定稿劇本詳實填入；面板附靈感範例一鍵起手。圖片以 `@imgN` 佔位符進出模型不會弄丟；執行前自動快照，可一鍵還原；設定與 Key 只存 localStorage。
 2. **WebMCP**：同一組工具會註冊到 `navigator.modelContext`（瀏覽器支援才生效），ZeroType Agent 等 WebMCP-aware 的 agent 擴充套件可直接以結構化工具操作本頁，不必戳 DOM。
 3. **外部 Agent skill**：repo 內附 [skills/line-chat-maker/SKILL.md](skills/line-chat-maker/SKILL.md)：腳本 JSON schema 與交付方式（檔案匯入/`#s=` 一鍵連結/Playwright 自動匯出）。把 skill 目錄 symlink 進你的 agent skills 資料夾即可。
 

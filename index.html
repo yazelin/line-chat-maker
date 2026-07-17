@@ -96,10 +96,14 @@
     <label>要 AI 做什麼(Ctrl+Enter 執行)
       <textarea id="ai-prompt" rows="3" placeholder="例:生成一段媽媽提醒兒子帶傘、兒子已讀不回的對話"></textarea>
     </label>
+    <p class="hint">沒想法?點一顆當起點,再改成你的:</p>
+    <div class="addbar" id="ai-ideas"></div>
+    <label class="row"><input id="ai-screenplay" type="checkbox" checked> 編劇模式:先寫劇本、評審打分及格才填入(小修改建議關掉)</label>
     <div class="addbar">
       <button id="ai-run" class="primary">執行</button>
       <button id="ai-stop" hidden>停止</button>
       <button id="ai-undo" hidden>還原 AI 修改前</button>
+      <button id="ai-new-draft" title="開一份空白草稿再讓 AI 發揮,不動目前創作">新草稿</button>
     </div>
     <p class="hint" id="ai-status"></p>
     <div id="ai-log" class="ai-log"></div>
