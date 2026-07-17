@@ -802,6 +802,7 @@ async function playback() {
     await new Promise((r) => setTimeout(r, 650));
     n.style.visibility = '';
     n.classList.add('appear');
+    chatEl.scrollTop = chatEl.scrollHeight; // 跟真聊天室一樣,新訊息出現自動捲到底
   }
 }
 
