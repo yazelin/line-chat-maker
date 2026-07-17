@@ -288,8 +288,11 @@ function updateGate() {
   $('#ai-enhance').disabled = blocked;
   $('#ai-quick-run').disabled = blocked;
   $('#ai-status').textContent = offline ? '離線中:AI 需要網路(其餘功能照常離線可用)。'
-    : needsKey(c) ? '先在下方填 API Key(只存這台裝置,不會進草稿或分享連結)。'
-    : !c.model ? '先在下方填 Model 名稱。' : '';
+    : needsKey(c) ? '先展開上方「連線設定」填 API Key(只存這台裝置,不會進草稿或分享連結)。'
+    : !c.model ? '先展開上方「連線設定」填 Model 名稱。' : '';
+  $('#ai-settings-summary').textContent = blocked && !offline
+    ? '連線設定(尚未設定,點開填 API Key)'
+    : `連線設定(${PROVIDERS[c.provider].label} · ${c.model})`;
 }
 // 劇本跟著草稿走(localStorage per draft id,不進 state:分享連結與匯出不帶劇本)
 function screenplayLoad() { try { $('#ai-screenplay-text').value = localStorage.getItem('lcm-screenplay-' + currentId) || ''; } catch (e) {} }
@@ -383,6 +386,7 @@ for (const [label, idea] of IDEAS) {
 window.addEventListener('online', updateGate);
 window.addEventListener('offline', updateGate);
 fillCfgForm();
+{ const c = cfg(); $('#ai-settings').open = needsKey(c) || !c.model; } // 只在載入時決定一次:沒設好=展開;之後不自動開合,不打擾使用者輸入
 
 // ── WebMCP:同一組工具註冊給頁面的 modelContext,讓 ZeroType Agent 等外部 agent 直接聰明操作 ──
 try {

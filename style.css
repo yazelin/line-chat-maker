@@ -258,3 +258,14 @@ body.dark .ai-log .prompt, body.dark .ai-log .done { color: #e5e2de; }
 body.previewing .ai-quickbar { display: none; }
 body.dark .ai-quickbar input { background: #1f2126; border-color: #33363c; color: #e5e2de; }
 body.dark .ai-quickbar button { background: #1f2126; border-color: #33363c; color: #e5e2de; }
+
+/* ── 連線設定摺疊區+兩段主按鈕整行 ── */
+#ai-settings { border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.6rem; margin-bottom: 0.8rem; }
+#ai-settings summary { cursor: pointer; font-size: 0.85rem; font-weight: 700; color: var(--fg); }
+#ai-settings[open] summary { margin-bottom: 0.6rem; }
+body.dark #ai-settings { border-color: #2a2c32; }
+body.dark #ai-settings summary { color: #e5e2de; }
+#ai-ideas { margin-bottom: 0.6rem; }
+#ai-enhance, #ai-run { flex: 1 1 100%; }
+.ai-quickbar { margin-top: -1.7rem; } /* .stage gap 2.2rem 太遠,拉回貼著 chat-addbar */
+.chat-addbar .playbtn:hover { background: #05b34e; border-color: #05b34e; color: #fff; } /* 蓋掉通用 hover 綠字,避免綠字疊綠底 */
