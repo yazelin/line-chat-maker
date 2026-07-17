@@ -33,6 +33,7 @@
     <nav class="tabs">
       <button class="tab active" data-pane="chatset">聊天室</button>
       <button class="tab" data-pane="frameset">外框</button>
+      <button class="tab" data-pane="ai">AI</button>
       <button class="tab" data-pane="exportset">匯出</button>
       <button class="tab" data-pane="drafts">草稿</button>
     </nav>
@@ -89,6 +90,25 @@
     <label class="row"><input id="set-darkui" type="checkbox"> 暗色工作區(光暈更明顯)</label>
     <label>背光強度 <input id="set-backlight" type="range" min="0" max="100" step="5"> <span id="backlight-val"></span></label>
     <label>背光顏色 <input id="set-backcolor" type="color"></label>
+    </section>
+
+    <section class="pane" id="pane-ai">
+    <label>要 AI 做什麼(Ctrl+Enter 執行)
+      <textarea id="ai-prompt" rows="3" placeholder="例:生成一段媽媽提醒兒子帶傘、兒子已讀不回的對話"></textarea>
+    </label>
+    <div class="addbar">
+      <button id="ai-run" class="primary">執行</button>
+      <button id="ai-stop" hidden>停止</button>
+      <button id="ai-undo" hidden>還原 AI 修改前</button>
+    </div>
+    <p class="hint" id="ai-status"></p>
+    <div id="ai-log" class="ai-log"></div>
+    <h2>連線設定</h2>
+    <label>Provider <select id="ai-provider"></select></label>
+    <label>API Base <input id="ai-base" type="text" spellcheck="false"></label>
+    <label>Model <input id="ai-model" type="text" spellcheck="false"></label>
+    <label>API Key <input id="ai-key" type="password" autocomplete="off"></label>
+    <p class="hint">AI 直接改目前草稿,改完可一鍵還原。設定與 Key 只存這台裝置(localStorage),不會進草稿、分享連結或任何伺服器;對話腳本會傳給你選的 AI 服務。Ollama 需啟動時設 OLLAMA_ORIGINS 允許本站。僅供創作示意,請勿用於詐騙或誤導。</p>
     </section>
 
     <section class="pane" id="pane-exportset">
@@ -181,6 +201,7 @@
 <input type="file" id="file-json" accept="application/json" hidden>
 <script src="vendor/html2canvas.min.js"></script>
 <script src="app.js"></script>
+<script src="ai.js"></script>
 <!-- yz-promo-footer v7 | 三件套+BMC 注意力效果 | https://github.com/yazelin/promo-footer-skill -->
 <script>
 (function(){"use strict";
