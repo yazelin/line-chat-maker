@@ -340,7 +340,7 @@ function content(m, i) {
   if (kind === 'image' || kind === 'sticker') {
     const box = el('div', kind === 'image' ? 'imgmsg' : 'sticker');
     const img = document.createElement('img');
-    img.src = m.img || 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150"><rect width="200" height="150" fill="#d8dde5"/><text x="100" y="80" text-anchor="middle" font-size="15" fill="#7a8091">點我上傳圖片</text></svg>');
+    img.src = m.img || 'data:image/svg+xml;utf8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150"><rect width="200" height="150" fill="#d8dde5"/><text x="100" y="80" text-anchor="middle" font-size="15" fill="#7a8091">' + (kind === 'sticker' ? '點我上傳貼圖' : '點我上傳圖片') + '</text></svg>');
     img.alt = '';
     box.title = '點擊換圖';
     box.addEventListener('click', () => { imgTarget = i; $('#file-avatar').click(); });
