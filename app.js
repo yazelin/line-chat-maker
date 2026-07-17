@@ -561,7 +561,11 @@ function brandPixels(canvas) {
       if (d[p + 3] < 250) continue; // 半透明像素 premultiply 會失真,跳過
       const gx = x >> 4, fx = ss(((x & 15) + 0.5) / 16);
       const s = (rowA[gx] * (1 - fx) + rowA[gx + 1] * fx) * (1 - fy) + (rowB[gx] * (1 - fx) + rowB[gx + 1] * fx) * fy;
-      const v = d[p + 2] + Math.floor(2 * s + (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16);
+      // 近白/近黑:振幅減半(截波後只剩單邊 -1..0),白上 -2 平滑斑實測可見、-1 是折衷;
+      // 訊號弱化由偵測端的平坦區統計補(白圖平坦區雜訊近零,半幅訊號 SNR 仍夠)
+      const b0 = d[p + 2];
+      const a = (b0 >= 253 || b0 <= 2) ? 1 : 2;
+      const v = b0 + Math.floor(a * s + (BAYER[(y & 3) * 4 + (x & 3)] + 0.5) / 16);
       d[p + 2] = v < 0 ? 0 : v > 255 ? 255 : v;
     }
   }
