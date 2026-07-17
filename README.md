@@ -25,9 +25,23 @@
 
 三條路，同一份腳本 JSON：
 
-1. **內建 AI 助手**（`ai.js`）：網頁「AI」分頁直接下指令。工具對到 app 的 state 操作（`get_script`/`apply_script`/`append_messages`/`export_png`），OpenAI 相容 tool-calling 迴圈（首輪強制工具＋反偷懶＋迴圈上限可調，預設 15）。**協助創作**：小提示也會被展開成完整規格（角色、劇情弧、敘事手法）生成初稿，且每次修改後強制自審（檢查清單重讀腳本），不合格自行再修，直到完成整個作品。**兩段式創作**把發想與實作分離：第 1 段「劇本強化」——編劇 AI 寫劇本（針對 LINE 形式的武器：已讀不回、時間跳躍、draft、貼圖…），評審 AI 五項評分（劇情弧/角色聲音/形式運用/節奏/真實感，≥40/50 且無單項 <6 才過，最多修 3 輪），劇本落在可編輯欄位，人和 AI 可反覆迭代到滿意；第 2 段「開始製作」——執行 AI 把定稿劇本詳實填入，不得自改劇情。劇本跟著草稿記在本機；面板附靈感範例一鍵起手。預覽下方另有「AI 微調」列：一句話直改目前畫面（只動指定處、多步可還原），大範圍走劇本、細修改走微調。「AI 補圖」把貼圖/照片/頭像一次生成回填（格盤單次呼叫＋自動切圖＋綠幕去背），圖像來源四選一：站長贊助（每日限量）/自帶 Gemini key /自架 [codex-image-service](https://github.com/yazelin/codex-image-service)（要開 CORS）/ OpenAI 繪圖 API。圖片以 `@imgN` 佔位符進出模型不會弄丟；執行前自動快照，可一鍵還原；設定與 Key 只存 localStorage。
+1. **內建 AI 助手**（`ai.js`，「AI」分頁）——一個小劇組：
+   - **兩段式創作**：第 1 段「劇本強化」由編劇 AI 寫劇本（善用已讀不回、時間跳躍、draft、貼圖等 LINE 形式），評審 AI 六項評分（劇情弧/角色聲音/形式運用/節奏/真實感/傳播力，總分 ≥48/60 且無單項 <6 才過，最多修 3 輪）；劇本落在可編輯欄位，人和 AI 反覆改到滿意。第 2 段「開始製作」由執行 AI 忠實填入腳本 JSON，不得自改劇情（tool-calling 迴圈：首輪強制工具＋反偷懶＋自審；迴圈上限可調，預設 10）。
+   - **AI 補圖**：美術指導 AI 依腳本產出每格繪圖 prompt（人物跨格一致、貼圖綠底），格盤**單次生圖呼叫**＋程式自動排格切回＋綠幕去背；單張可重生、prompt 可手改。
+   - **AI 微調**：預覽下方一句話直改畫面（只動指定處）；所有 AI 修改都推進多步還原堆疊。
+   - 圖片以 `@imgN` 佔位符進出模型不會弄丟；設定與 Key 只存 localStorage。
 2. **WebMCP**：同一組工具會註冊到 `navigator.modelContext`（瀏覽器支援才生效），ZeroType Agent 等 WebMCP-aware 的 agent 擴充套件可直接以結構化工具操作本頁，不必戳 DOM。
 3. **外部 Agent skill**：repo 內附 [skills/line-chat-maker/SKILL.md](skills/line-chat-maker/SKILL.md)：腳本 JSON schema 與交付方式（檔案匯入/`#s=` 一鍵連結/Playwright 自動匯出）。把 skill 目錄 symlink 進你的 agent skills 資料夾即可。
+
+### AI 來源與額度
+
+| 用途 | 來源選項（連線設定） | 預設 model | 免費額度 |
+|---|---|---|---|
+| 文字（編劇/評審/執行/微調） | 「刷亞澤的信用卡」（站長代理）/ Groq / OpenAI / Gemini / OpenRouter / Ollama / 自訂 | 站長代理與 Groq＝`openai/gpt-oss-120b`；OpenAI＝`gpt-5-mini`；Gemini＝`gemini-3.1-flash-lite`（編劇選 Gemini 自動帶 `gemini-3.1-pro-preview`） | 站長代理：每 IP 每日 60 次呼叫（約 3 個作品），全站每日 1200 次熔斷；自帶 key 不限 |
+| 編劇/評審可另設 | 同上任一（與執行分開設定） | 同上 | 同上 |
+| 圖像（AI 補圖/重生） | 站長贊助 / 自帶 Gemini key / 自架 [codex-image-service](https://github.com/yazelin/codex-image-service)（服務端要開 CORS）/ OpenAI 繪圖 API | Gemini＝`gemini-3.1-flash-image`；OpenAI＝`gpt-image-2`（gpt-image-1 於 2026-10 退場） | 站長贊助：每 IP 每日 2 次、全站每日 20 次；自帶 key 不限 |
+
+右上角徽章顯示「今日剩：AI N/60・圖 N/2」；額度 UTC 換日（台北早上 8 點重置）。站長側全部參數在 `worker/wrangler.toml`。
 
 ## 本機開發
 
