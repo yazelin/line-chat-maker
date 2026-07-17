@@ -643,7 +643,7 @@ async function renderCanvasFallback() {
   });
 }
 
-// ── 匯出 MP4:重演播放時序,逐關鍵幀 foreignObject 渲染 → WebCodecs H.264 → mp4-muxer 封裝(離線編碼,比即時播放快) ──
+// ── 匯出 MP4:重演播放時序,固定 30fps foreignObject 逐幀渲染(氣泡淡入/捲動內插)→ WebCodecs H.264 → mp4-muxer 封裝 ──
 let _exportCss = null;
 async function exportFrameCanvas(scale, fixedW, fixedH) {
   const src = $('#phone-wrap');
@@ -711,40 +711,60 @@ $('#export-mp4').addEventListener('click', async () => {
     let scale = Math.min(2, Math.sqrt(8_000_000 / (rawW * rawH)), 4000 / rawW, 4000 / rawH); // H.264 級別與硬體編碼上限
     const W = Math.floor(rawW * scale / 2) * 2, H = Math.floor(rawH * scale / 2) * 2;
     // 時序表(與播放一致):開場停 0.8s → 每則 0.65s → 停 0.7s → 草稿 75ms/字 → 收尾 1.5s
+    // 訊息步只回報「要捲多少」,實際捲動交給幀迴圈內插成平滑動畫
     const steps = [{ hold: 800, apply() { nodes.forEach((n) => { n.style.visibility = 'hidden'; n.classList.remove('appear'); }); if (draftText) { draftEl.style.minHeight = draftH + 'px'; draftEl.textContent = ''; } chatEl.scrollTop = 0; } }];
-    nodes.forEach((n) => steps.push({ hold: 650, apply() {
+    nodes.forEach((n) => steps.push({ hold: 650, bubble: n, apply() {
       n.style.visibility = '';
       const nb = n.getBoundingClientRect(), cb = chatEl.getBoundingClientRect();
-      if (nb.bottom > cb.bottom) chatEl.scrollTop += nb.bottom - cb.bottom;
+      return nb.bottom > cb.bottom ? nb.bottom - cb.bottom : 0;
     } }));
     if (draftText) {
       steps.push({ hold: 700, apply() {} });
       for (let i = 1; i <= draftText.length; i++) { const k = i; steps.push({ hold: 75, apply() { draftEl.textContent = draftText.slice(0, k); } }); }
     }
     steps.push({ hold: 1500, apply() {} });
+    // 攤成絕對時間軸,固定 30fps(CFR,剪輯軟體友善):氣泡淡入+捲動逐幀內插,靜止段重用畫面只重編碼
+    const FPS = 30, ANIM = 300; // ANIM 對齊 lcmIn 0.3s
+    const events = []; let totalMs = 0;
+    steps.forEach((s) => { events.push({ at: totalMs, step: s }); totalMs += s.hold; });
+    const totalFrames = Math.round(totalMs * FPS / 1000);
+    const easeOut = (p) => 1 - (1 - p) * (1 - p);
 
     const muxer = new Mp4Muxer.Muxer({ target: new Mp4Muxer.ArrayBufferTarget(), video: { codec: 'avc', width: W, height: H }, fastStart: 'in-memory' });
     let encErr = null;
     const encoder = new VideoEncoder({ output: (chunk, meta) => muxer.addVideoChunk(chunk, meta), error: (e) => { encErr = e; } });
     encoder.configure({ codec: 'avc1.640033', width: W, height: H, bitrate: 6_000_000 });
-    let tUs = 0;
-    let lastCanvas = null;
-    for (let i = 0; i < steps.length; i++) {
-      steps[i].apply();
-      lastCanvas = await exportFrameCanvas(scale, W, H);
-      const frame = new VideoFrame(lastCanvas, { timestamp: tUs, duration: steps[i].hold * 1000 });
-      encoder.encode(frame, { keyFrame: i % 10 === 0 });
+    const anims = []; // 進行中的氣泡動畫 {node, scrollFrom, scrollBy, startMs}
+    let ei = 0, dirty = true, lastCanvas = null;
+    for (let f = 0; f < totalFrames; f++) {
+      const nowMs = f * 1000 / FPS;
+      while (ei < events.length && events[ei].at <= nowMs) {
+        const { at, step } = events[ei++];
+        const scrollBy = step.apply() || 0;
+        if (step.bubble) anims.push({ node: step.bubble, scrollFrom: chatEl.scrollTop, scrollBy, startMs: at });
+        dirty = true;
+      }
+      for (let k = anims.length - 1; k >= 0; k--) {
+        const a = anims[k], p = (nowMs - a.startMs) / ANIM;
+        if (p >= 1) {
+          a.node.style.opacity = ''; a.node.style.transform = '';
+          chatEl.scrollTop = a.scrollFrom + a.scrollBy;
+          anims.splice(k, 1);
+        } else {
+          const e2 = easeOut(Math.max(p, 0));
+          a.node.style.opacity = e2.toFixed(3);
+          a.node.style.transform = `translateY(${(6 * (1 - e2)).toFixed(2)}px)`;
+          if (a.scrollBy) chatEl.scrollTop = a.scrollFrom + a.scrollBy * e2;
+        }
+        dirty = true;
+      }
+      if (dirty) { lastCanvas = await exportFrameCanvas(scale, W, H); dirty = false; }
+      const frame = new VideoFrame(lastCanvas, { timestamp: Math.round(f * 1e6 / FPS), duration: Math.round(1e6 / FPS) });
+      encoder.encode(frame, { keyFrame: f % 60 === 0 });
       frame.close();
-      tUs += steps[i].hold * 1000;
       if (encErr) throw encErr;
-      btn.textContent = `匯出中 ${i + 1}/${steps.length}`;
+      btn.textContent = `匯出中 ${f + 1}/${totalFrames}`;
       await new Promise((r) => setTimeout(r, 0));
-    }
-    { // mp4 總長=最後一幀的 timestamp:多墊一幀,收尾停留才不會被吃掉
-      const frame = new VideoFrame(lastCanvas, { timestamp: tUs, duration: 33_000 });
-      encoder.encode(frame, { keyFrame: false });
-      frame.close();
-      tUs += 33_000;
     }
     await encoder.flush();
     muxer.finalize();
@@ -754,7 +774,7 @@ $('#export-mp4').addEventListener('click', async () => {
     a.href = URL.createObjectURL(blob);
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 30_000);
-    toast(`MP4 已匯出(${Math.round(tUs / 1e6)} 秒,${W}x${H},無聲;隱形識別標記是 PNG 專屬,影片僅帶可見浮水印)`);
+    toast(`MP4 已匯出(${Math.round(totalMs / 1000)} 秒,${W}x${H},30fps,無聲;隱形識別標記是 PNG 專屬,影片僅帶可見浮水印)`);
   } catch (e) {
     console.warn('MP4 匯出失敗', e);
     alert('MP4 匯出失敗:' + ((e && e.message) || e));
@@ -803,7 +823,7 @@ $('#export-html').addEventListener('click', async () => {
   const wm = state.settings.watermark ? '<div style="text-align:right;font:12px/1.6 sans-serif;color:rgba(0,0,0,0.45)">示意圖</div>' : '';
   const reset = '.lcm-embed *{margin:0;padding:0;border:0;border-radius:0;box-shadow:none;box-sizing:border-box;background:none;font:inherit;color:inherit;}';
   const autoplay = !!state.settings.embedAutoplay;
-  const embJs = `<script>(function(){var s=document.currentScript,r=s.closest('.lcm-embed');s.remove();var c=r.querySelector('.line-chat');function bottom(){if(c)c.scrollTop=c.scrollHeight}bottom();${autoplay ? "var ms=[].slice.call(r.querySelectorAll('.line-chat>div'));var f=r.querySelector('.fakein'),dt=f?f.textContent:'';var io=new IntersectionObserver(function(en){if(!en[0].isIntersecting)return;io.disconnect();ms.forEach(function(m){m.style.visibility='hidden'});if(f&&dt)f.textContent='';if(c)c.scrollTop=0;var i=0;(function st(){if(i>=ms.length){if(f&&dt){var j=0;setTimeout(function tp(){if(j<dt.length){f.textContent=dt.slice(0,++j);setTimeout(tp,75)}},700)}return}var m=ms[i++];m.style.visibility='';m.style.animation='lcmIn .3s ease-out';if(c){var nb=m.getBoundingClientRect(),qb=c.getBoundingClientRect();if(nb.bottom>qb.bottom)c.scrollTop+=nb.bottom-qb.bottom}setTimeout(st,650)})()},{threshold:0.4});io.observe(r);" : ''}})();<\/script>`;
+  const embJs = `<script>(function(){var s=document.currentScript,r=s.closest('.lcm-embed');s.remove();var c=r.querySelector('.line-chat');function bottom(){if(c)c.scrollTop=c.scrollHeight}bottom();${autoplay ? "var ms=[].slice.call(r.querySelectorAll('.line-chat>div'));var f=r.querySelector('.fakein'),dt=f?f.textContent:'';var playing=false;function play(){if(playing)return;playing=true;ms.forEach(function(m){m.style.visibility='hidden';m.style.animation='none'});if(f&&dt)f.textContent='';if(c)c.scrollTop=0;var i=0;(function st(){if(i>=ms.length){if(f&&dt){var j=0;setTimeout(function tp(){if(j<dt.length){f.textContent=dt.slice(0,++j);setTimeout(tp,75)}else{playing=false}},700)}else{playing=false}return}var m=ms[i++];m.style.visibility='';void m.offsetWidth;m.style.animation='lcmIn .3s ease-out';if(c){var nb=m.getBoundingClientRect(),qb=c.getBoundingClientRect();if(nb.bottom>qb.bottom)c.scrollTop+=nb.bottom-qb.bottom}setTimeout(st,650)})()}var io=new IntersectionObserver(function(en){if(en[en.length-1].isIntersecting)play()},{threshold:0.4});io.observe(r);" : ''}})();<\/script>`;
   const html = `<!-- LINE 對話製造機產生的內嵌片段:整段貼進你的頁面即可顯示。僅供創作示意 https://yazelin.github.io/line-chat-maker/ -->\n<div class="lcm-embed" style="max-width:24rem;margin:1.5rem auto;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Noto Sans TC','Microsoft JhengHei',sans-serif;line-height:1.6;">\n${clone.outerHTML}\n${wm}\n${embJs}\n</div>\n<style>\n${reset}\n${scoped}\n@keyframes lcmIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }\n</style>`;
   try {
     await navigator.clipboard.writeText(html);
