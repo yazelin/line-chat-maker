@@ -256,6 +256,7 @@ function updateGate() {
   const blocked = offline || needsKey(c) || !c.model;
   $('#ai-run').disabled = blocked;
   $('#ai-enhance').disabled = blocked;
+  $('#ai-quick-run').disabled = blocked;
   $('#ai-status').textContent = offline ? '離線中:AI 需要網路(其餘功能照常離線可用)。'
     : needsKey(c) ? '先在下方填 API Key(只存這台裝置,不會進草稿或分享連結)。'
     : !c.model ? '先在下方填 Model 名稱。' : '';
@@ -277,6 +278,7 @@ function fillCfgForm() {
 function setBusy(on) {
   $('#ai-run').disabled = on;
   $('#ai-enhance').disabled = on;
+  $('#ai-quick-run').disabled = on;
   $('#ai-stop').hidden = !on;
   if (!on) updateGate();
 }
@@ -313,6 +315,16 @@ $('#ai-run').addEventListener('click', async () => { // 第 2 段:穩定實作(�
   catch (e) { log(e.name === 'AbortError' ? '已停止。' : '失敗:' + e.message, 'err'); }
   setBusy(false);
 });
+$('#ai-quick-run').addEventListener('click', async () => { // 微調:直接下指令改畫面,不經劇本
+  const quick = $('#ai-quick').value.trim();
+  if (!quick) { $('#ai-quick').focus(); return; }
+  setBusy(true);
+  log('微調:' + quick, 'prompt');
+  try { await runAgent(quick, ''); $('#ai-quick').value = ''; }
+  catch (e) { log(e.name === 'AbortError' ? '已停止。' : '失敗:' + e.message, 'err'); }
+  setBusy(false);
+});
+$('#ai-quick').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#ai-quick-run').click(); });
 $('#ai-screenplay-text').addEventListener('input', screenplaySave);
 $('#ai-stop').addEventListener('click', () => { if (aborter) aborter.abort(); });
 $('#ai-undo').addEventListener('click', () => {
@@ -321,7 +333,7 @@ $('#ai-undo').addEventListener('click', () => {
   aiSnapshot = null; $('#ai-undo').hidden = true;
   save(); render(); toast('已還原到 AI 修改前');
 });
-$('#ai-prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#ai-run').click(); });
+$('#ai-prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) $('#ai-enhance').click(); }); // 主題欄的主動作=劇本強化
 $('#ai-new-draft').addEventListener('click', async () => { // 借用草稿頁的既有邏輯,AI 快照一併作廢
   aiSnapshot = null; $('#ai-undo').hidden = true;
   $('#draft-new').click();
