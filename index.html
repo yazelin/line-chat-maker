@@ -96,14 +96,14 @@
     <div class="addbar">
       <button id="ai-new-draft" title="開一份空白草稿再讓 AI 發揮,不動目前創作">新草稿</button>
     </div>
-    <label>要 AI 做什麼(Ctrl+Enter 執行)
-      <textarea id="ai-prompt" rows="3" placeholder="例:生成一段媽媽提醒兒子帶傘、兒子已讀不回的對話"></textarea>
-    </label>
-    <p class="hint">沒想法?點一顆當起點,再改成你的:</p>
-    <div class="addbar" id="ai-ideas"></div>
     <h2>第 1 段:發想劇本</h2>
+    <label>劇情主題(想做一段什麼樣的對話?Ctrl+Enter 直接強化)
+      <textarea id="ai-prompt" rows="3" placeholder="例:媽媽提醒兒子帶傘、兒子已讀不回,傍晚淋雨才示弱"></textarea>
+    </label>
+    <p class="hint">沒想法?點一顆主題當起點,再改成你的:</p>
+    <div class="addbar" id="ai-ideas"></div>
     <div class="addbar">
-      <button id="ai-enhance">劇本強化</button>
+      <button id="ai-enhance" class="primary">劇本強化</button>
     </div>
     <label>劇本(按「劇本強化」讓 AI 寫或改;你也可以直接編輯、反覆強化,和 AI 一起把劇本寫好)
       <textarea id="ai-screenplay-text" rows="8" placeholder="按「劇本強化」由 AI 起稿,或自己先寫幾行…"></textarea>
@@ -114,7 +114,13 @@
       <button id="ai-stop" hidden>停止</button>
       <button id="ai-undo" hidden>還原 AI 修改前</button>
     </div>
-    <p class="hint">劇本欄留空=依上面指令直接製作(小修改建議走這條)。</p>
+    <p class="hint">依上面的劇本製作;劇本欄留空則直接照主題發揮。</p>
+    <label>微調指令(選填:做完後想小改,直接下指令改畫面,不經劇本;Ctrl+Enter 執行)
+      <input id="ai-quick" type="text" placeholder="例:把第三句改成貼圖、標題改成「媽」">
+    </label>
+    <div class="addbar">
+      <button id="ai-quick-run">快速修改</button>
+    </div>
     <p class="hint" id="ai-status"></p>
     <div id="ai-log" class="ai-log"></div>
     <h2>連線設定</h2>
