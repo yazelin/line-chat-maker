@@ -455,7 +455,7 @@ async function openaiImage(prompt, size) { // OpenAI 官方繪圖 API(自帶 key
   const r = await fetch('https://api.openai.com/v1/images/generations', {
     method: 'POST',
     headers: { 'content-type': 'application/json', authorization: 'Bearer ' + c.imgKey },
-    body: JSON.stringify({ model: (c.imgModel || 'gpt-image-1').trim(), prompt, size, n: 1 }),
+    body: JSON.stringify({ model: (c.imgModel || 'gpt-image-2').trim(), prompt, size, n: 1 }), // gpt-image-1 於 2026-10 退場
   });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error((d.error && d.error.message) || 'HTTP ' + r.status);
@@ -636,7 +636,7 @@ function fillCfgForm() {
     $('#ai-img-base-row').hidden = ip !== 'codex';
     $('#ai-img-model-row').hidden = ip !== 'openai';
     $('#ai-img-base').value = c.imgBase || '';
-    $('#ai-img-model').value = c.imgModel || (ip === 'openai' ? 'gpt-image-1' : '');
+    $('#ai-img-model').value = c.imgModel || (ip === 'openai' ? 'gpt-image-2' : '');
     $('#ai-img-key').value = c.imgKey || '';
     $('#ai-img-key-label').textContent = ip === 'codex' ? 'cimg API Key' : ip === 'openai' ? 'OpenAI API Key' : 'Gemini API Key(留空=沿用編劇或執行的 Gemini key)';
     $('#ai-img-hint').textContent = ip === 'codex'
