@@ -6,6 +6,16 @@
 
 ![icon](icons/icon-192.png)
 
+## 60 秒示範
+
+給一句主題 → AI 編劇寫劇本（評審打分，不及格退稿）→ 一鍵做成對話 → AI 補圖一次生成貼圖/照片/頭像：
+
+<video src="https://github.com/yazelin/line-chat-maker/raw/master/examples/demo-workflow.mp4" controls width="700" muted playsinline></video>
+
+兩部用本工具做出來的作品（播放動畫錄影），與線上版一起看：**[示範與作品頁](https://yazelin.github.io/line-chat-maker/demo.html)**
+
+<video src="https://github.com/yazelin/line-chat-maker/raw/master/examples/showcase-1.mp4" controls width="340" muted playsinline></video> <video src="https://github.com/yazelin/line-chat-maker/raw/master/examples/showcase-2.mp4" controls width="340" muted playsinline></video>
+
 ## 能做什麼
 
 - 所見即所得：泡泡文字、暱稱、時間、已讀數，點了直接改

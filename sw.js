@@ -1,6 +1,6 @@
 // ponytail: 全量 precache、cache-first、ignoreSearch —— 照 yazelin PWA 離線守則
-const CACHE = 'lcm-v90';
-const ASSETS = ['./', 'index.html', 'style.css', 'app.js', 'ai.js', 'vendor/html2canvas.min.js', 'verify.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
+const CACHE = 'lcm-v91';
+const ASSETS = ['./', 'index.html', 'style.css', 'app.js', 'ai.js', 'vendor/html2canvas.min.js', 'verify.html', 'demo.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', (e) => {
