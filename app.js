@@ -533,6 +533,51 @@ $('#file-avatar').addEventListener('change', (e) => {
   e.target.value = '';
 });
 
+// ── 隱形識別三層:iTXt metadata + alpha-LSB 藏字串 + ±2 亮度格紋 ──
+// 對外只承諾「提高濫用成本、可供識別」;開源工具擋不住有心人。驗證頁:verify.html
+// 格紋用座標偽隨機而非文字遮罩:字型渲染跨平台不一致,幾何格紋才能在驗證端位元級重現
+const BRAND_TEXT = 'LCM1|line-chat-maker 示意圖(非真實對話)|https://yazelin.github.io/line-chat-maker/';
+function blockSign(i, j) { // 16px 格 → ±1;pattern 週期 8 格(128px),裁切後可搜尋比對
+  let h = Math.imul((i & 7) + 1, 73856093) ^ Math.imul((j & 7) + 1, 19349663);
+  h = Math.imul(h ^ (h >>> 13), 0x5bd1e995);
+  return ((h ^ (h >>> 15)) & 1) ? 1 : -1;
+}
+function brandPixels(canvas) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const im = ctx.getImageData(0, 0, W, H), d = im.data;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const p = (y * W + x) * 4;
+    if (d[p + 3] < 250) continue; // 半透明像素 premultiply 會失真,跳過
+    const s = blockSign(x >> 4, y >> 4) * 3;
+    for (let c = 0; c < 3; c++) { const v = d[p + c] + s; d[p + c] = v < 0 ? 0 : v > 255 ? 255 : v; }
+  }
+  const bytes = new TextEncoder().encode(BRAND_TEXT); // alpha LSB:2 bytes 長度 + UTF-8
+  const all = [(bytes.length >> 8) & 255, bytes.length & 255, ...bytes];
+  for (let k = 0; k < all.length * 8 && k * 4 + 3 < d.length; k++) {
+    const bit = (all[k >> 3] >> (7 - (k & 7))) & 1;
+    d[k * 4 + 3] = (d[k * 4 + 3] & 254) | bit;
+  }
+  ctx.putImageData(im, 0, 0);
+}
+const CRC_T = (() => { const t = new Int32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c; } return t; })();
+function crc32(b) { let c = -1; for (let i = 0; i < b.length; i++) c = CRC_T[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ -1) >>> 0; }
+function pngWithMeta(canvas) { // IHDR 後插一個 iTXt chunk(tEXt 只吃 Latin-1,中文要 iTXt)
+  const src = Uint8Array.from(atob(canvas.toDataURL('image/png').split(',')[1]), (ch) => ch.charCodeAt(0));
+  const enc = new TextEncoder();
+  const body = Uint8Array.from([...enc.encode('Comment'), 0, 0, 0, 0, 0, ...enc.encode(BRAND_TEXT)]);
+  const chunk = new Uint8Array(12 + body.length);
+  const dv = new DataView(chunk.buffer);
+  dv.setUint32(0, body.length);
+  chunk.set(enc.encode('iTXt'), 4);
+  chunk.set(body, 8);
+  dv.setUint32(8 + body.length, crc32(chunk.subarray(4, 8 + body.length)));
+  const out = new Uint8Array(src.length + chunk.length);
+  out.set(src.subarray(0, 33)); out.set(chunk, 33); out.set(src.subarray(33), 33 + chunk.length); // 33 = PNG 簽名 8 + IHDR 25
+  let s = ''; for (let i = 0; i < out.length; i += 32768) s += String.fromCharCode.apply(null, out.subarray(i, i + 32768));
+  return 'data:image/png;base64,' + btoa(s);
+}
+
 // ── 匯出 PNG:SVG foreignObject 真渲染(與預覽像素一致);失敗時 html2canvas 備援 ──
 function cleanClone() {
   const clone = $('#phone-wrap').cloneNode(true);
@@ -595,9 +640,10 @@ $('#export-png').addEventListener('click', async () => {
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillText('示意圖', canvas.width - pad, canvas.height - pad);
   }
+  brandPixels(canvas);
   const a = document.createElement('a');
   a.download = 'line-chat.png';
-  a.href = canvas.toDataURL('image/png');
+  a.href = pngWithMeta(canvas);
   a.click();
 });
 

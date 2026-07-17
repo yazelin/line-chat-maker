@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>圖片識別標記驗證|LINE 對話製造機</title>
+<style>
+  body { font-family: -apple-system, 'Noto Sans TC', 'Microsoft JhengHei', sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; color: #1c1917; line-height: 1.7; }
+  h1 { font-size: 1.3rem; } a { color: #06c755; }
+  #drop { border: 2px dashed #bbb; border-radius: 12px; padding: 2.5rem 1rem; text-align: center; color: #6b6560; cursor: pointer; }
+  #drop.over { border-color: #06c755; background: #f0fdf4; }
+  table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+  td { border: 1px solid #e5e2de; padding: 0.5rem 0.7rem; vertical-align: top; }
+  td:first-child { white-space: nowrap; font-weight: 700; }
+  .ok { color: #06753d; font-weight: 700; } .no { color: #b45309; font-weight: 700; }
+  .hint { color: #6b6560; font-size: 0.88rem; }
+</style>
+</head>
+<body>
+<h1>圖片識別標記驗證</h1>
+<p>檢查一張圖是否由 <a href="./">LINE 對話製造機</a> 匯出。工具匯出的 PNG 帶三層標記:檔案 metadata、像素藏碼、亮度格紋——強韌度遞增,格紋在截圖、轉檔、重壓縮、裁切後仍可統計驗出(縮放後不保證)。圖片只在你的瀏覽器本機分析,不會上傳。</p>
+<div id="drop">把圖片拖到這裡,或點擊選檔</div>
+<input id="file" type="file" accept="image/*" hidden>
+<div id="out"></div>
+<p class="hint">「未檢出」不代表圖是真的對話截圖——別的工具、修圖軟體做的假圖這裡驗不出來。這個驗證只回答一件事:這張圖是不是本工具匯出的示意圖。</p>
+<script>
+'use strict';
+const MAGIC = 'LCM1|';
+// 與 app.js 相同的格紋函數:16px 格 → ±1,週期 8 格
+function blockSign(i, j) {
+  let h = Math.imul((i & 7) + 1, 73856093) ^ Math.imul((j & 7) + 1, 19349663);
+  h = Math.imul(h ^ (h >>> 13), 0x5bd1e995);
+  return ((h ^ (h >>> 15)) & 1) ? 1 : -1;
+}
+function findITXt(buf) { // 走 PNG chunk,回傳含 MAGIC 的 iTXt 內文
+  const b = new Uint8Array(buf);
+  if (b.length < 8 || b[0] !== 0x89 || b[1] !== 0x50) return null;
+  const dv = new DataView(buf);
+  for (let p = 8; p + 12 <= b.length;) {
+    const len = dv.getUint32(p), type = String.fromCharCode(b[p + 4], b[p + 5], b[p + 6], b[p + 7]);
+    if (type === 'iTXt') {
+      const txt = new TextDecoder().decode(b.subarray(p + 8, p + 8 + len));
+      const i = txt.indexOf(MAGIC);
+      if (i >= 0) return txt.slice(i);
+    }
+    p += 12 + len;
+  }
+  return null;
+}
+function findLSB(d) { // alpha LSB:2 bytes 長度 + UTF-8
+  const bit = (k) => d[k * 4 + 3] & 1;
+  const byteAt = (i) => { let v = 0; for (let j = 0; j < 8; j++) v = (v << 1) | bit(i * 8 + j); return v; };
+  const len = (byteAt(0) << 8) | byteAt(1);
+  if (len < MAGIC.length || len > 2000 || (2 + len) * 8 * 4 > d.length) return null;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = byteAt(2 + i);
+  try { const s = new TextDecoder('utf-8', { fatal: true }).decode(bytes); return s.startsWith(MAGIC) ? s : null; } catch (e) { return null; }
+}
+function detectPattern(d, W, H) { // 積分圖 → 各(相位,平移)候選做高通相關,z 分數判定
+  const lumI = new Float64Array((W + 1) * (H + 1)); // 亮度積分圖
+  const opqI = new Int32Array((W + 1) * (H + 1));   // 不透明計數積分圖
+  for (let y = 0; y < H; y++) {
+    let rowL = 0, rowO = 0;
+    for (let x = 0; x < W; x++) {
+      const p = (y * W + x) * 4;
+      rowL += 0.299 * d[p] + 0.587 * d[p + 1] + 0.114 * d[p + 2];
+      rowO += d[p + 3] >= 250 ? 1 : 0;
+      lumI[(y + 1) * (W + 1) + x + 1] = lumI[y * (W + 1) + x + 1] + rowL;
+      opqI[(y + 1) * (W + 1) + x + 1] = opqI[y * (W + 1) + x + 1] + rowO;
+    }
+  }
+  const rect = (I, x, y, w, h) => I[(y + h) * (W + 1) + x + w] - I[y * (W + 1) + x + w] - I[(y + h) * (W + 1) + x] + I[y * (W + 1) + x];
+  const B = 16, stats = [];
+  let best = { z: 0, stat: 0 };
+  for (let py = 0; py < B; py++) for (let px = 0; px < B; px++) { // 相位:格線落點
+    const nx = Math.floor((W - px) / B), ny = Math.floor((H - py) / B);
+    if (nx < 8 || ny < 8) continue;
+    const m = new Float64Array(nx * ny); const ok = new Uint8Array(nx * ny);
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const x = px + i * B, y = py + j * B;
+      if (rect(opqI, x, y, B, B) === B * B) { m[j * nx + i] = rect(lumI, x, y, B, B) / (B * B); ok[j * nx + i] = 1; }
+    }
+    const hp = new Float64Array(nx * ny); // 高通:減四鄰均值,壓掉影像內容
+    const hok = new Uint8Array(nx * ny);  // 另開陣列,不能邊掃邊清 ok(會沿列連鎖歸零)
+    let sum = 0, sum2 = 0, cnt = 0;
+    for (let j = 1; j < ny - 1; j++) for (let i = 1; i < nx - 1; i++) {
+      const k = j * nx + i;
+      if (ok[k] && ok[k - 1] && ok[k + 1] && ok[k - nx] && ok[k + nx]) {
+        hp[k] = m[k] - (m[k - 1] + m[k + 1] + m[k - nx] + m[k + nx]) / 4;
+        hok[k] = 1; sum += hp[k]; sum2 += hp[k] * hp[k]; cnt++;
+      }
+    }
+    if (cnt < 60) continue;
+    const sdHp = Math.sqrt(Math.max(1e-9, sum2 / cnt - (sum / cnt) * (sum / cnt)));
+    for (let sy = 0; sy < 8; sy++) for (let sx = 0; sx < 8; sx++) { // 平移:pattern 週期內對齊
+      let s = 0;
+      for (let j = 1; j < ny - 1; j++) for (let i = 1; i < nx - 1; i++) {
+        const k = j * nx + i;
+        if (hok[k]) s += hp[k] * blockSign(i + sx, j + sy);
+      }
+      stats.push((s / cnt) / (sdHp / Math.sqrt(cnt))); // 正規化 t 統計量:null≈N(0,1)
+    }
+  }
+  if (!stats.length) return { found: false, z: 0 };
+  const z = Math.max(...stats);
+  return { found: z > 7, z }; // null 是 16384 個 N(0,1) 的極值,期望約 4.3;7 以上才判檢出
+}
+async function check(file) {
+  const out = document.getElementById('out');
+  out.innerHTML = '<p>分析中…</p>';
+  const buf = await file.arrayBuffer();
+  const itxt = findITXt(buf);
+  const img = new Image();
+  img.src = URL.createObjectURL(new Blob([buf]));
+  await img.decode();
+  const c = document.createElement('canvas'); c.width = img.naturalWidth; c.height = img.naturalHeight;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0);
+  const d = ctx.getImageData(0, 0, c.width, c.height).data;
+  const lsb = findLSB(d);
+  const pat = detectPattern(d, c.width, c.height);
+  const row = (name, hit, detail) => `<tr><td>${name}</td><td><span class="${hit ? 'ok' : 'no'}">${hit ? '檢出' : '未檢出'}</span> ${detail}</td></tr>`;
+  const anyHit = !!itxt || !!lsb || pat.found;
+  out.innerHTML = `<table>
+    ${row('檔案 metadata', !!itxt, itxt ? esc(itxt) : '<span class="hint">上傳社群平台通常會被移除</span>')}
+    ${row('像素藏碼', !!lsb, lsb ? esc(lsb) : '<span class="hint">轉檔或重壓縮後會消失</span>')}
+    ${row('亮度格紋', pat.found, `<span class="hint">訊號強度 z=${pat.z.toFixed(1)}(門檻 7);截圖/重壓縮/裁切後仍可驗,縮放後不保證</span>`)}
+  </table>
+  <p>${anyHit ? '<strong>這張圖帶有 LINE 對話製造機的識別標記,是本工具產生的示意圖,不是真實對話截圖。</strong>' : '未檢出本工具的標記。注意:這不代表圖是真的,只代表不是(或已無法辨識為)本工具匯出的。'}</p>`;
+}
+function esc(s) { return s.replace(/[&<>]/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[ch])); }
+const drop = document.getElementById('drop'), fi = document.getElementById('file');
+drop.addEventListener('click', () => fi.click());
+fi.addEventListener('change', () => fi.files[0] && check(fi.files[0]));
+drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('over'));
+drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); e.dataTransfer.files[0] && check(e.dataTransfer.files[0]); });
+</script>
+</body>
+</html>
