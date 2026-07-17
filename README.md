@@ -60,8 +60,9 @@
 ## 聲明與防濫用
 
 - 產出**僅供創作示意**（部落格配圖、教學、行銷素材）。請勿用於詐騙、毀謗、偽造證據等誤導用途。
-- 匯出的 PNG 除了可開關、文字可自訂的浮水印，**一律嵌入三層隱形識別標記**（無開關）:PNG iTXt metadata、alpha 通道藏碼、±2/255 平滑藍場紋（肉眼不可見；截圖、JPEG 重壓縮、裁切後仍可統計驗出，縮放後不保證）。原理與實測數據見 [docs/watermark.md]（docs/watermark.md）。
-- 任何人都可以用 [verify.html](https://yazelin.github.io/line-chat-maker/verify.html) 拖圖驗證「這張圖是否由本工具產生」，分析全在瀏覽器本機。
+- 匯出的 PNG 除了可開關、文字可自訂的浮水印，**一律嵌入三層隱形識別標記**（無開關）:PNG iTXt metadata、alpha 通道藏碼、±2/255 平滑藍場紋（肉眼不可見；截圖、JPEG 重壓縮、裁切後仍可統計驗出，縮放後不保證）。
+- 匯出的 MP4 **每一幀都帶同一張隱形場紋**；驗證時多幀平均後偵測，H.264 重壓縮、平台轉檔後仍驗得出（縮放後不保證）。原理與實測數據見 [docs/watermark.md](docs/watermark.md)。
+- 任何人都可以用 [verify.html](https://yazelin.github.io/line-chat-maker/verify.html) 拖**圖或影片**驗證「是否由本工具產生」，分析全在瀏覽器本機。
 - 誠實說明界限：本專案開源，標記擋不住有心人 fork 移除，別的工具做的假圖也驗不出來。標記的目的是提高順手濫用的成本、給受害者與平台一個識別線索，不是防偽保證。
 - 非官方工具；LINE 為 LY Corporation 之商標，本專案與其無任何關聯。
 

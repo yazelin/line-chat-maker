@@ -291,7 +291,7 @@ async function runAgent(prompt, screenplay, quick) {
     { role: 'system', content: SYSTEM },
     { role: 'user', content: '目前腳本 JSON:\n' + JSON.stringify(strip(scriptOf())) + '\n\n' + task },
   ];
-  const loopLimit = Math.min(50, Math.max(3, +cfg().loops || 10)); // 每按一次「開始製作」重新起算
+  const loopLimit = Math.min(50, Math.max(3, +cfg().loops || 15)); // 每按一次「開始製作」重新起算
   let allowForce = true; // 推理模型偶爾在 required 下硬回文字,Groq 直接 400;降級 auto+反偷懶訊息驅動
   try {
     for (let step = 1; step <= loopLimit; step++) {
@@ -618,7 +618,7 @@ function fillCfgForm() {
   $('#ai-base').value = c.base || '';
   $('#ai-model').value = c.model || '';
   $('#ai-key').value = c.key || '';
-  $('#ai-loops').value = Math.min(50, Math.max(3, +c.loops || 10));
+  $('#ai-loops').value = Math.min(50, Math.max(3, +c.loops || 15));
   const wsel = $('#ai-w-provider');
   if (!wsel.options.length) {
     const same = document.createElement('option'); same.value = ''; same.textContent = '同執行設定'; wsel.appendChild(same);
