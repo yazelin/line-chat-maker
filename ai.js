@@ -81,6 +81,10 @@ async function execTool(name, args) {
   if (name === 'get_script') return JSON.stringify(strip(scriptOf()));
   if (name === 'apply_script') {
     if (args.settings && typeof args.settings === 'object' && !Array.isArray(args.settings)) Object.assign(state.settings, rehydrate(args.settings));
+    { // 保險:群名尾帶「(3)」拆成 title+members,避免畫面 (3)(3) 重複
+      const tm = String(state.settings.title || '').match(/^(.*?)[  ]*[((](\d+)[))]\s*$/);
+      if (tm && tm[1].trim()) { state.settings.title = tm[1].trim(); if (!(+state.settings.members) || +state.settings.members === +tm[2]) state.settings.members = +tm[2]; }
+    }
     if (Array.isArray(args.people)) state.people = rehydrate(args.people).filter((p) => p && p.id).map((p) => ({ id: String(p.id), name: String(p.name ?? '朋友'), avatar: typeof p.avatar === 'string' && p.avatar.startsWith('data:') ? p.avatar : null }));
     if (Array.isArray(args.messages)) state.messages = sanitizeMessages(args.messages);
     fixRefs(); save(); render();
@@ -102,7 +106,7 @@ const SYSTEM = `你是「LINE 對話製造機」網頁內建的 AI 助手,幫創
 
 schema 重點:
 - settings:title(聊天室名稱)、members(0=不顯示)、bg(背景色)、mode("group"|"dm")、theme("light"|"dark")、clock(狀態列時間)、frameLevel("phone"|"screen"|"chat")、watermark、height("auto"|"fixed")、heightPx、draft(輸入框未送出文字)、announceOn/announce(置頂公告)。只改需要的欄位。
-- mode:"dm"(1對1)時 title 必須=對方(左側那位)的名字、members 給 0;mode:"group" 時 title=群組名稱、members 給合理人數。
+- mode:"dm"(1對1)時 title 必須=對方(左側那位)的名字、members 給 0;mode:"group" 時 title=群組名稱、members 給合理人數。title **絕不含人數**:劇本群名若尾帶「(3)」,拆開——title 去掉它、members=3(畫面自動顯示人數,寫進 title 會重複)。
 - people:[{id,name,avatar}],avatar 是圖片(@imgN 佔位符或 null=灰底圓)。
 - messages 依序渲染:
   {"type":"date","text":"7月15日 (三)"} 日期分隔
@@ -154,7 +158,7 @@ const WRITER_SYSTEM = `你是資深編劇,專為「LINE 對話截圖」這種形
 - 日期分隔:獨立行「[日期:7月17日 (四)]」→ 跨日必用;跨日本身可以是劇情(冷戰過夜)
 - 省略分隔:獨立行「(略)」→ 跳過不重要的過程,兩段高潮之間的剪接
 場景設定(開場先決定):
-- 1對1(dm):標題=對方的名字;群組:標題=像真的群組名+合理成員數,置頂公告是群組限定武器(可以埋梗)
+- 1對1(dm):標題=對方的名字;群組:標題=像真的群組名+合理成員數,置頂公告是群組限定武器(可以埋梗)。群組名稱**不要自己加「(人數)」**——成員數是獨立設定,畫面會自動顯示,寫進名字會變成 (3)(3)
 - 輸入框草稿:「(草稿) draft=打了沒送出的那句話」→ 顯示在輸入框;強力的懸念收尾,但屬於選配——不是每部都要用,連用會膩
 - 主題氛圍:可指定深色/亮色主題、聊天背景色配合劇情(深夜戲用深色)
 
