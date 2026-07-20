@@ -19,6 +19,7 @@ body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "N
 .addbar button { border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 0.35rem 0.7rem; font-size: 0.85rem; cursor: pointer; }
 .addbar button:hover { border-color: var(--accent); color: var(--accent); }
 .addbar button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+#ai-images { flex: 1 0 100%; } /* AI 補圖:自成一列、滿寬 */
 .hint { font-size: 0.75rem; color: var(--muted); }
 
 .stage { flex: 1 1 24rem; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 2.2rem; }
@@ -267,7 +268,8 @@ body.dark .ai-quickbar button { background: #1f2126; border-color: #33363c; colo
 body.dark #ai-settings { border-color: #2a2c32; }
 body.dark #ai-settings summary { color: #e5e2de; }
 #ai-ideas { margin-bottom: 0.6rem; }
-#ai-enhance, #ai-run { flex: 1 1 100%; }
+#ai-run { flex: 1 1 100%; }
+#ai-enhance, #ai-copy-prompt { flex: 1 1 auto; } /* 劇本強化 + 複製 prompt 同一列 */
 .ai-quickbar { margin-top: -1.7rem; } /* .stage gap 2.2rem 太遠,拉回貼著 chat-addbar */
 .chat-addbar .playbtn:hover { background: #05b34e; border-color: #05b34e; color: #fff; } /* 蓋掉通用 hover 綠字,避免綠字疊綠底 */
 
