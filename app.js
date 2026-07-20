@@ -193,11 +193,13 @@ function render() {
   if (realOnly) realOnly.hidden = eff !== 'real'; // 佈景/系統色只在真實 skin 下有意義
   $('#set-aifab').checked = st.aiFab !== false;
   $('#ai-fab').style.display = st.aiFab === false ? 'none' : '';
-  { // 系統顏色:狀態列+表頭底色,依亮度自動配黑/白前景
+  if (eff === 'real') { // 系統顏色:狀態列+表頭底色,依亮度自動配黑/白前景(僅真實 skin;玩樂 skin 交給 skin CSS)
     const sys = st.sysColor || '#2d3b4e';
     const lum = 0.2126 * parseInt(sys.slice(1, 3), 16) + 0.7152 * parseInt(sys.slice(3, 5), 16) + 0.0722 * parseInt(sys.slice(5, 7), 16);
     const sysFg = lum > 150 ? '#17181a' : '#fff';
     for (const sel of ['#phone .statusbar', '#phone .linehead']) { const n = $(sel); n.style.background = sys; n.style.color = sysFg; }
+  } else { // 玩樂 skin:清掉 inline 色,讓 .phone.skin-* CSS 生效
+    for (const sel of ['#phone .statusbar', '#phone .linehead']) { const n = $(sel); n.style.background = ''; n.style.color = ''; }
   }
   const fsel = $('#set-font');
   if (st.font && !Array.from(fsel.options).some((o) => o.value === st.font)) {

@@ -281,3 +281,27 @@ body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8
 /* 玩樂基礎:傾斜由 --tilt(每泡)× --playful(全域)× 各 skin 的 --tilt-range 決定;real skin 不設 --tilt-range 故為 0 */
 .phone { --playful: 0.5; }
 .phone[class*="skin-"] .line-chat .msg { transform: rotate(calc(var(--tilt, 0deg) * var(--playful, .5) * var(--tilt-range, 0))); transition: transform .15s ease; }
+
+/* ===== skin: Memo 貼紙手帳 ===== */
+.phone.skin-memo { --tilt-range: 4; }
+.phone.skin-memo .screen { background: #f4ece0; }
+.phone.skin-memo .line-chat { background: #f4ece0; }
+.phone.skin-memo .line-chat .msg .bubble {
+  background: #fffdf8; color: #3a3226;
+  border: 3px solid #fff; border-radius: 14px;
+  box-shadow: 0 2px 0 rgba(120,100,70,.18), 0 6px 14px rgba(120,100,70,.12);
+}
+.phone.skin-memo .line-chat .msg.me .bubble { background: #eafbe6; color: #2b3a24; }
+.phone.skin-memo .linehead { position: relative; } /* 供紙膠帶 ::before 定位 */
+.phone.skin-memo .statusbar, .phone.skin-memo .linehead { background: #efe4d4 !important; color: #5b4a34 !important; }
+.phone.skin-memo .inputbar { background: #efe4d4; color: #5b4a34; }
+/* 紙膠帶裝飾:表頭上緣一條半透明斜貼 */
+.phone.skin-memo .linehead::before {
+  content: ''; position: absolute; left: 18px; top: -6px; width: 68px; height: 18px;
+  background: rgba(230,180,120,.55); transform: rotate(-4deg); border-radius: 2px;
+}
+.phone.skin-memo .line-chat .appear { animation: memoIn .34s cubic-bezier(.22,1.2,.36,1) both; }
+@keyframes memoIn {
+  from { opacity: 0; transform: scale(.9) translateY(10px) rotate(2deg); }
+  to   { opacity: 1; transform: scale(1) translateY(0) rotate(0); }
+}
