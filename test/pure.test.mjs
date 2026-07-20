@@ -86,6 +86,15 @@ test('safeFileName:非法字元換底線、空白退未命名', () => {
   assert.equal(P.safeFileName('  '), '未命名');
 });
 
+// ── presetsToLoad:老使用者「載入內建範例」時,只挑草稿裡還沒有的(按 name 去重)──
+test('presetsToLoad:只回傳現有草稿沒有的', () => {
+  const presets = [{ name: 'A' }, { name: 'B' }, { name: 'C' }];
+  assert.deepEqual(P.presetsToLoad(presets, ['B']).map((p) => p.name), ['A', 'C']);
+  assert.deepEqual(P.presetsToLoad(presets, ['A', 'B', 'C']), []);
+  assert.deepEqual(P.presetsToLoad(presets, []).map((p) => p.name), ['A', 'B', 'C']);
+  assert.deepEqual(P.presetsToLoad(null, ['x']), []);
+});
+
 // ── downloadName:副檔名跟實際型別 ──
 test('downloadName:jpeg 頭像存 .jpg、png 保持、無法辨識退 png', () => {
   assert.equal(P.downloadName('data:image/jpeg;base64,AA', 'avatar-小白.png'), 'avatar-小白.jpg');

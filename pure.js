@@ -60,5 +60,11 @@
     return filename.replace(/\.[^./]+$/, '') + '.' + ext;
   }
 
-  root.LCM_PURE = { isChromaGreen, chromaKeyData, planGrid, cellRect, validateFillCells, safeFileName, downloadName };
+  // 老使用者手動「載入內建範例」時,只挑草稿裡還沒有的(按 name 去重,不重複塞、不動現有草稿)
+  function presetsToLoad(presets, existingNames) {
+    const have = new Set(existingNames || []);
+    return (presets || []).filter((p) => !have.has(p && p.name));
+  }
+
+  root.LCM_PURE = { isChromaGreen, chromaKeyData, planGrid, cellRect, validateFillCells, safeFileName, downloadName, presetsToLoad };
 })(typeof window !== 'undefined' ? window : globalThis);
