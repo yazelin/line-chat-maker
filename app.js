@@ -1018,6 +1018,10 @@ async function playback() {
       await new Promise((r) => setTimeout(r, 75));
     }
   }
+  // 清掉進場定格:skin 進場動畫用 fill:both,若留著 .appear 會把泡泡定在結尾的 rotate(0),蓋掉基礎傾斜
+  // (且緊接著匯出 PNG 會 clone 到帶 .appear 的節點,有 from:opacity0 半途風險)。清掉後 transform 交還基礎傾斜,基礎規則的 .15s transition 讓它平滑落定。
+  await new Promise((r) => setTimeout(r, 500)); // 等最後一則進場動畫跑完再清
+  nodes.forEach((n) => n.classList.remove('appear'));
 }
 
 document.querySelectorAll('.tabs .tab').forEach((t) => t.addEventListener('click', () => {

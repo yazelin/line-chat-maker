@@ -280,7 +280,7 @@ body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8
 
 /* 玩樂基礎:傾斜由 --tilt(每泡)× --playful(全域)× 各 skin 的 --tilt-range 決定;real skin 不設 --tilt-range 故為 0 */
 .phone { --playful: 0.5; }
-.phone[class*="skin-"] .line-chat .msg { transform: rotate(calc(var(--tilt, 0deg) * var(--playful, .5) * var(--tilt-range, 0))); transition: transform .15s ease; }
+.phone[class*="skin-"]:not(.skin-real) .line-chat .msg { transform: rotate(calc(var(--tilt, 0deg) * var(--playful, .5) * var(--tilt-range, 0))); transition: transform .15s ease; }
 
 /* ===== skin: Memo 貼紙手帳 ===== */
 .phone.skin-memo { --tilt-range: 4; }
