@@ -304,7 +304,8 @@ function render() {
         const p = personOf(m);
         const av = el('img', 'av'); av.alt = '';
         if (p.avatar) av.src = p.avatar; else av.removeAttribute('src');
-        av.title = '點擊換頭像'; av.addEventListener('click', () => { avatarTarget = p.id; $('#file-avatar').click(); });
+        av.title = '點擊換頭像;右鍵下載頭像'; av.addEventListener('click', () => { avatarTarget = p.id; $('#file-avatar').click(); });
+        av.addEventListener('contextmenu', (e) => { e.preventDefault(); if (!p.avatar) { toast('這個人物還沒有頭像'); return; } downloadCellImage(p.avatar, 'avatar-' + safeFileName(p.name) + '.png'); });
         node.appendChild(av);
       }
       const body = el('div', 'mbody');
@@ -426,6 +427,7 @@ function controls(m, i) {
   btn('↓', '下移', () => { if (i < state.messages.length - 1) { state.messages.splice(i + 1, 0, state.messages.splice(i, 1)[0]); save(); render(); } });
   if (m.type === 'msg') {
     if ((m.kind === 'image' || m.kind === 'sticker') && m.imgPrompt && window.lcmRegenImage) btn('重生', 'AI 重畫這張圖(可還原)', () => window.lcmRegenImage(i));
+    if ((m.kind === 'image' || m.kind === 'sticker') && m.img) btn('下載', '下載這張圖,改完可用「點擊換圖」重新上傳', () => downloadCellImage(m.img, m.kind === 'sticker' ? 'sticker-' + i + '.png' : 'image-' + i + '.jpg'));
     btn('⇄', '換邊', () => { if (m.side === 'left') { m.side = 'right'; m.read = m.read || ''; } else { m.side = 'left'; m.personId = m.personId || state.people[0].id; } save(); render(); });
     if ((m.kind || 'text') === 'text') btn('引', '加/移除引用回覆', () => { m.quote = m.quote ? null : { name: '某人', text: '被引用的訊息' }; save(); render(); });
     btn('心', '加/移除表情回應', () => { m.react = m.react && m.react.length ? null : ['😆']; save(); render(); });
@@ -439,6 +441,16 @@ function controls(m, i) {
 }
 
 function el(tag, cls) { const n = document.createElement(tag); if (cls) n.className = cls; return n; }
+
+// ── 下載對話內單張圖:輸出使用者上傳/AI 生成的原圖(data URL),供外部改圖後,再走既有「點擊換圖/換頭像」重新上傳 ──
+// 刻意不加浮水印/隱形識別:這是可再編輯的素材源;合成後的 PNG/MP4 匯出才會烙印。與 PNG/JSON 匯出同一套 a.download 手法。
+function safeFileName(s) { return String(s == null ? '' : s).replace(/[\\/:*?"<>|]+/g, '_').trim() || '未命名'; }
+function downloadCellImage(dataUrl, filename) {
+  const a = document.createElement('a');
+  a.download = filename;
+  a.href = dataUrl;
+  a.click();
+}
 
 // ── 設定面板 ──
 $('#set-title').addEventListener('input', (e) => { state.settings.title = e.target.value; save(); render(); });
