@@ -490,11 +490,7 @@ function collectImageSlots() {
   state.people.forEach((p, i) => { if (!p.avatar) slots.push({ type: 'avatar', personIndex: i, hint: '「' + p.name + '」的大頭貼' }); });
   return slots.slice(0, 12); // 一次呼叫的上限(3×4);再多的下次再補
 }
-function planGrid(n) {
-  if (n <= 4) return { cols: 2, rows: 2, size: '1024x1024' };
-  if (n <= 9) return { cols: 3, rows: 3, size: '1024x1024' };
-  return { cols: 3, rows: 4, size: '1024x1536' };
-}
+function planGrid(n) { return LCM_PURE.planGrid(n); } // 盤面選擇見 pure.js
 function buildGridPrompt(grid, cells) {
   return [
     `一張 ${grid.cols}×${grid.rows} 等分網格圖。格與格之間用明顯的粗白色分隔線隔開,每格內容完全獨立、不可跨格。`,
@@ -527,26 +523,10 @@ async function fetchGeneratedBitmap(url) {
   if (!r.ok) throw new Error('下載成品失敗(HTTP ' + r.status + ')');
   return createImageBitmap(await r.blob());
 }
-function isChromaGreen(br, bg, bb) { // 底色是否真的偏綠:綠為主色且明顯壓過藍。放寬到抓得住 gpt-image 的黃悶綠,但擋掉藍/粉/白/膚色
-  return bg > 50 && bg >= br * 0.95 && bg > bb * 1.2;
-}
-function chromaKey(canvas) { // 貼圖綠底去背:四角取綠中位數當底色;先過綠底閘門,確認是綠幕才色距去背+羽化+綠溢抑制(gpt-image 綠幕偏黃悶綠,固定比例門檻抓不到)
+function chromaKey(canvas) { // 貼圖綠底去背:純邏輯(四角取綠 + 色距去背 + 綠底閘門)在 pure.js,app 與測試共用同一份
   const g = canvas.getContext('2d');
-  const im = g.getImageData(0, 0, canvas.width, canvas.height), d = im.data;
-  const w = canvas.width, h = canvas.height, k = Math.max(4, Math.floor(h / 20)); // 每角取 k×k 區塊
-  const rs = [], gs = [], bs = [];
-  const push = (x, y) => { const o = (y * w + x) * 4; rs.push(d[o]); gs.push(d[o + 1]); bs.push(d[o + 2]); };
-  for (let y = 0; y < k; y++) for (let x = 0; x < k; x++) { push(x, y); push(w - 1 - x, y); push(x, h - 1 - y); push(w - 1 - x, h - 1 - y); } // 四角採樣
-  const med = (a) => { a.sort((p, q) => p - q); return a[a.length >> 1]; }; // 中位數抗雜訊:主體壓到角落也不致整體歪掉
-  const br = med(rs), bg = med(gs), bb = med(bs), lo = 45, hi = 95; // 色距 lo 內全透明、hi 外全保留、之間羽化
-  if (!isChromaGreen(br, bg, bb)) return; // 綠底閘門:四角中位數不偏綠(貼圖沒鋪綠幕、AI 回全出血插圖、或主體膚色/衣色鋪滿四角)就整張保留不動,不拿主體色當去背色挖洞
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i], gr = d[i + 1], b = d[i + 2];
-    const dist = Math.sqrt((r - br) ** 2 + (gr - bg) ** 2 + (b - bb) ** 2); // 與底色的歐氏色距
-    const a = Math.max(0, Math.min(1, (dist - lo) / (hi - lo))) * 255;
-    d[i + 3] = Math.min(d[i + 3], a);
-    if (a > 0 && a < 255) { const cap = Math.max(r, b); if (gr > cap) d[i + 1] = Math.min(gr, cap + 12); } // 邊緣綠溢抑制:綠不得高於紅/藍太多
-  }
+  const im = g.getImageData(0, 0, canvas.width, canvas.height);
+  LCM_PURE.chromaKeyData(im.data, canvas.width, canvas.height);
   g.putImageData(im, 0, 0);
 }
 function drawSlot(img, sx, sy, sw, sh, type) {
@@ -559,29 +539,14 @@ function drawSlot(img, sx, sy, sw, sh, type) {
   if (type === 'sticker') chromaKey(out);
   return out.toDataURL('image/webp', 0.82); // WebP:同尺寸比 PNG/JPEG 小很多、貼圖 alpha 保留;不支援的舊瀏覽器會自動退回 PNG
 }
-function applyGrid(img, grid, cells) { // 切圖回填共用:網格圖 → 各格 dataURL → 寫回 state
-  const cw = img.width / grid.cols, ch = img.height / grid.rows, inset = 0.08;
+function applyGrid(img, grid, cells) { // 切圖回填共用:網格圖 → 各格 dataURL → 寫回 state(切圖幾何在 pure.js)
   cells.forEach((c, i) => {
     if (c.skip) return; // 取回時目標已對不上的格:仍佔格位維持切圖對位,但不回填避免貼錯
-    const col = i % grid.cols, row = Math.floor(i / grid.cols);
-    const dataUrl = drawSlot(img, col * cw + cw * inset, row * ch + ch * inset, cw * (1 - inset * 2), ch * (1 - inset * 2), c.type);
+    const rect = LCM_PURE.cellRect(img.width, img.height, grid, i);
+    const dataUrl = drawSlot(img, rect.sx, rect.sy, rect.sw, rect.sh, c.type);
     if (c.type === 'avatar') { const p = state.people[c.personIndex]; if (p) { p.avatar = dataUrl; p.avatarPrompt = c.prompt; } }
     else { const m = state.messages[c.msgIndex]; if (m) { m.img = dataUrl; m.imgPrompt = c.prompt; } }
   });
-}
-function validateFillCells(cells, messages, people) { // 取回時比對指紋:回傳同長度 cells(對不上的標 skip)與略過數,避免草稿變動後貼錯格
-  let skipped = 0;
-  const out = cells.map((c) => {
-    if (c.type === 'avatar') {
-      const idx = c.personId != null ? people.findIndex((p) => p.id === c.personId) : c.personIndex; // 用穩定 personId 重新定位,抗人物重排
-      if (idx == null || idx < 0 || !people[idx]) { skipped++; return Object.assign({}, c, { skip: true }); }
-      return Object.assign({}, c, { personIndex: idx });
-    }
-    const m = messages[c.msgIndex], fp = c.fp;
-    if (!m || (fp && (m.time !== fp.time || m.kind !== fp.kind || m.personId !== fp.personId || m.side !== fp.side))) { skipped++; return Object.assign({}, c, { skip: true }); }
-    return c;
-  });
-  return { cells: out, skipped };
 }
 // ── 取回上次補圖:補圖送出 job 後把重建切圖所需的最小資訊存進 localStorage;逾時/報錯不清,事後可一鍵查後端把已生成的結果切回 ──
 const FILL_PENDING_KEY = 'lcm-fill-pending';
@@ -649,7 +614,7 @@ async function recoverFill() {
     if (res.dead) { log('上次的補圖結果已過期或失敗;已清除紀錄。', 'err'); toast('補圖結果已過期;已清除'); clearPending(); }
     else if (!res.done) { log('後端仍在生成;請稍後再按「取回上次補圖」。', 'warn'); toast('圖還在生成;稍後再取回'); }
     else {
-      const v = validateFillCells(record.cells, state.messages, state.people);
+      const v = LCM_PURE.validateFillCells(record.cells, state.messages, state.people);
       if (v.skipped) {
         toast('草稿已變動;跳過 ' + v.skipped + ' 格避免貼錯');
         log('有 ' + v.skipped + ' 格的目標訊息／人物已變動,為避免貼錯已略過(可重新補圖)。', 'warn');

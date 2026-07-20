@@ -322,7 +322,7 @@ function render() {
         const av = el('img', 'av'); av.alt = '';
         if (p.avatar) av.src = p.avatar; else av.removeAttribute('src');
         av.title = '點擊換頭像;右鍵下載頭像'; av.addEventListener('click', () => { avatarTarget = p.id; $('#file-avatar').click(); });
-        av.addEventListener('contextmenu', (e) => { e.preventDefault(); if (!p.avatar) { toast('這個人物還沒有頭像'); return; } downloadCellImage(p.avatar, 'avatar-' + safeFileName(p.name) + '.png'); });
+        av.addEventListener('contextmenu', (e) => { e.preventDefault(); if (!p.avatar) { toast('這個人物還沒有頭像'); return; } downloadCellImage(p.avatar, 'avatar-' + window.LCM_PURE.safeFileName(p.name) + '.png'); });
         node.appendChild(av);
       }
       const body = el('div', 'mbody');
@@ -461,12 +461,9 @@ function el(tag, cls) { const n = document.createElement(tag); if (cls) n.classN
 
 // ── 下載對話內單張圖:輸出使用者上傳/AI 生成的原圖(data URL),供外部改圖後,再走既有「點擊換圖/換頭像」重新上傳 ──
 // 刻意不加浮水印/隱形識別:這是可再編輯的素材源;合成後的 PNG/MP4 匯出才會烙印。與 PNG/JSON 匯出同一套 a.download 手法。
-function safeFileName(s) { return String(s == null ? '' : s).replace(/[\\/:*?"<>|]+/g, '_').trim() || '未命名'; }
 function downloadCellImage(dataUrl, filename) {
-  const mime = (String(dataUrl).match(/^data:image\/([a-z0-9.+-]+)/i) || ['', ''])[1].toLowerCase();
-  const ext = mime === 'jpeg' ? 'jpg' : (mime || 'png'); // 副檔名跟著實際 data URL 的型別走(匯入的草稿可能帶 jpg 頭像)
   const a = document.createElement('a');
-  a.download = filename.replace(/\.[^./]+$/, '') + '.' + ext;
+  a.download = window.LCM_PURE.downloadName(dataUrl, filename); // 檔名安全化 + 副檔名邏輯見 pure.js
   a.href = dataUrl;
   a.click();
 }
