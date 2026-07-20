@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, font: '', sysColor: '#2d3b4e', theme: 'light', aiFab: true, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, wmText: 'LINE 對話製造機', clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, sbAlarm: true, sbArrows: true, sbVolte: true, sbSignal: true, sbBatt: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, font: '', sysColor: '#2d3b4e', theme: 'light', skin: 'memo', aiFab: true, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, wmText: 'LINE 對話製造機', clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, sbAlarm: true, sbArrows: true, sbVolte: true, sbSignal: true, sbBatt: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -180,6 +180,11 @@ function render() {
   $('#set-mode').value = st.mode || 'group';
   $('#set-syscolor').value = st.sysColor || '#2d3b4e';
   $('#set-theme').value = st.theme || 'light';
+  const eff = window.LCM_SKINS.resolveSkin(st);
+  const skinSel = document.querySelector('#set-skin');
+  if (skinSel) skinSel.value = eff;
+  const realOnly = document.querySelector('#real-only');
+  if (realOnly) realOnly.hidden = eff !== 'real'; // 佈景/系統色只在真實 skin 下有意義
   $('#set-aifab').checked = st.aiFab !== false;
   $('#ai-fab').style.display = st.aiFab === false ? 'none' : '';
   { // 系統顏色:狀態列+表頭底色,依亮度自動配黑/白前景
@@ -463,6 +468,22 @@ $('#syscolor-reset').addEventListener('click', () => { state.settings.sysColor =
 $('#set-theme').addEventListener('change', (e) => {
   state.settings.theme = e.target.value; // 切佈景順手帶合理系統色(仍可再改)
   state.settings.sysColor = e.target.value === 'dark' ? '#0f1216' : '#2d3b4e';
+  save(); render();
+});
+// 依旗標填 skin 選單:一般訪客只看到玩樂四款;本機設 lcm-real 才多出 real
+(function initSkinPicker() {
+  const sel = document.querySelector('#set-skin');
+  const showReal = window.LCM_SKINS.realEnabled();
+  sel.innerHTML = '';
+  for (const s of window.LCM_SKINS.SKINS) {
+    if (s.hidden && !showReal) continue;
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = s.label;
+    sel.appendChild(o);
+  }
+})();
+document.querySelector('#set-skin').addEventListener('change', (e) => {
+  state.settings.skin = e.target.value;
   save(); render();
 });
 $('#set-aifab').addEventListener('change', (e) => { state.settings.aiFab = e.target.checked; save(); render(); });

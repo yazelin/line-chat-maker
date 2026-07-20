@@ -50,8 +50,9 @@
     </section>
 
     <section class="pane" id="pane-frameset">
+    <label>風格 <select id="set-skin"></select></label>
     <label>系統顏色(狀態列+表頭) <span class="addbar"><input id="set-syscolor" type="color"><button id="syscolor-reset" type="button">重置預設</button></span></label>
-    <label>佈景 <select id="set-theme"><option value="light">亮色</option><option value="dark">深色(LINE 深色模式)</option></select></label>
+    <span id="real-only" hidden><label>佈景 <select id="set-theme"><option value="light">亮色</option><option value="dark">深色(LINE 深色模式)</option></select></label></span>
     <label class="row"><input id="set-aifab" type="checkbox"> LINE AI 懸浮鈕</label>
     <label>外框程度 <select id="set-frame-level"><option value="phone">包含手機</option><option value="screen">螢幕擷圖</option><option value="chat">僅對話</option></select></label>
     <div id="grp-hw">
