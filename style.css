@@ -404,9 +404,10 @@ body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8
 .phone.skin-jelly .line-chat .q { color:#a85684; }
 .phone.skin-doodle .line-chat .q { color:#5a5a4c; }
 .phone.skin-pop .line-chat .q { color:#cbc7e0; }
+.phone.skin-pop .line-chat .msg.me .q { color:#cbc7e0; } /* 蓋過 theme-dark 的 .msg.me .q(6 類,同分靠順序):暗底下 me 引用不落回深綠 */
 /* Pop 暗底:假輸入框與 AI 懸浮鈕不能留 baseline 亮色 */
 .phone.skin-pop .inputbar .fakein { background: rgba(255,255,255,.09); color:#d5d5e2; }
-.phone.skin-pop .aifab { background: rgba(255,255,255,.08); color:#eafffb; border:1px solid rgba(0,229,192,.55); }
+.phone.skin-pop .ai-fab { background: rgba(255,255,255,.08); color:#eafffb; border:1px solid rgba(0,229,192,.55); }
 /* Pop 霓虹感:狀態列/表頭圖示與標題加微光暈 */
 .phone.skin-pop .statusbar .sicons svg, .phone.skin-pop .linehead .hicons svg { filter: drop-shadow(0 0 2.5px rgba(0,229,192,.65)); }
 .phone.skin-pop .linehead .htitle { text-shadow: 0 0 6px rgba(0,229,192,.35); }
