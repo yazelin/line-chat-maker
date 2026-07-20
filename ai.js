@@ -550,14 +550,14 @@ function chromaKey(canvas) { // 貼圖綠底去背:四角取綠中位數當底�
   g.putImageData(im, 0, 0);
 }
 function drawSlot(img, sx, sy, sw, sh, type) {
-  const target = type === 'avatar' ? 96 : type === 'sticker' ? 320 : 480;
+  const target = Math.min(512, Math.max(64, Math.round(sw))); // 切格盤原生尺寸(上限 512),不再壓到 96/320/480
   const out = document.createElement('canvas');
   out.width = target; out.height = target;
   const g = out.getContext('2d');
   if (type === 'image') { g.fillStyle = '#fff'; g.fillRect(0, 0, target, target); }
   g.drawImage(img, sx, sy, sw, sh, 0, 0, target, target);
   if (type === 'sticker') chromaKey(out);
-  return type === 'image' ? out.toDataURL('image/jpeg', 0.85) : out.toDataURL('image/png');
+  return out.toDataURL('image/webp', 0.82); // WebP:同尺寸比 PNG/JPEG 小很多、貼圖 alpha 保留;不支援的舊瀏覽器會自動退回 PNG
 }
 function applyGrid(img, grid, cells) { // 切圖回填共用:網格圖 → 各格 dataURL → 寫回 state
   const cw = img.width / grid.cols, ch = img.height / grid.rows, inset = 0.08;
