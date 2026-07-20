@@ -5,6 +5,35 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
+// ── 鏡像:ai.js isChromaGreen 綠底閘門 —— 四角中位數色偏綠才去背,否則整張保留 ──
+function isChromaGreen(br, bg, bb) {
+  return bg > 50 && bg >= br * 0.95 && bg > bb * 1.2;
+}
+
+test('綠底閘門:黃悶綠底 [114,152,98] 判定為綠(要去背)', () => {
+  assert.equal(isChromaGreen(114, 152, 98), true, 'gpt-image 黃悶綠必須過閘門');
+});
+
+test('綠底閘門:膚色底 [240,192,160] 不判為綠(整張保留,不挖主體)', () => {
+  assert.equal(isChromaGreen(240, 192, 160), false, '主體膚色鋪滿四角時不可當去背色');
+});
+
+test('綠底閘門:純白底 [240,240,240] 不判為綠', () => {
+  assert.equal(isChromaGreen(240, 240, 240), false, '白底綠僅與藍等值,不過藍門檻');
+});
+
+test('綠底閘門:藍天底 [135,206,235] 不判為綠', () => {
+  assert.equal(isChromaGreen(135, 206, 235), false, '藍高於綠,不過閘門');
+});
+
+test('綠底閘門:粉底 [255,192,203] 不判為綠', () => {
+  assert.equal(isChromaGreen(255, 192, 203), false, '紅為主色,不過閘門');
+});
+
+test('綠底閘門:飽和綠底 [50,200,50] 判定為綠', () => {
+  assert.equal(isChromaGreen(50, 200, 50), true);
+});
+
 // ── 鏡像:ai.js chromaKey 的單像素色距→alpha(lo=45 全透明核心、hi=95 全保留、之間羽化)+ 綠溢抑制 ──
 const LO = 45, HI = 95;
 function chromaPixel(bg, px, origAlpha = 255) { // bg=[r,g,b] 底色;px=[r,g,b] 前景;回 {alpha, green}

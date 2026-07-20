@@ -527,7 +527,10 @@ async function fetchGeneratedBitmap(url) {
   if (!r.ok) throw new Error('下載成品失敗(HTTP ' + r.status + ')');
   return createImageBitmap(await r.blob());
 }
-function chromaKey(canvas) { // 貼圖綠底去背:四角取綠中位數當底色,色距去背+羽化+綠溢抑制(gpt-image 綠幕偏黃悶綠,固定比例門檻抓不到)
+function isChromaGreen(br, bg, bb) { // 底色是否真的偏綠:綠為主色且明顯壓過藍。放寬到抓得住 gpt-image 的黃悶綠,但擋掉藍/粉/白/膚色
+  return bg > 50 && bg >= br * 0.95 && bg > bb * 1.2;
+}
+function chromaKey(canvas) { // 貼圖綠底去背:四角取綠中位數當底色;先過綠底閘門,確認是綠幕才色距去背+羽化+綠溢抑制(gpt-image 綠幕偏黃悶綠,固定比例門檻抓不到)
   const g = canvas.getContext('2d');
   const im = g.getImageData(0, 0, canvas.width, canvas.height), d = im.data;
   const w = canvas.width, h = canvas.height, k = Math.max(4, Math.floor(h / 20)); // 每角取 k×k 區塊
@@ -536,6 +539,7 @@ function chromaKey(canvas) { // 貼圖綠底去背:四角取綠中位數當底�
   for (let y = 0; y < k; y++) for (let x = 0; x < k; x++) { push(x, y); push(w - 1 - x, y); push(x, h - 1 - y); push(w - 1 - x, h - 1 - y); } // 四角採樣
   const med = (a) => { a.sort((p, q) => p - q); return a[a.length >> 1]; }; // 中位數抗雜訊:主體壓到角落也不致整體歪掉
   const br = med(rs), bg = med(gs), bb = med(bs), lo = 45, hi = 95; // 色距 lo 內全透明、hi 外全保留、之間羽化
+  if (!isChromaGreen(br, bg, bb)) return; // 綠底閘門:四角中位數不偏綠(貼圖沒鋪綠幕、AI 回全出血插圖、或主體膚色/衣色鋪滿四角)就整張保留不動,不拿主體色當去背色挖洞
   for (let i = 0; i < d.length; i += 4) {
     const r = d[i], gr = d[i + 1], b = d[i + 2];
     const dist = Math.sqrt((r - br) ** 2 + (gr - bg) ** 2 + (b - bb) ** 2); // 與底色的歐氏色距
