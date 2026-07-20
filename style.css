@@ -318,6 +318,8 @@ body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8
 }
 .phone.skin-memo .statusbar, .phone.skin-memo .linehead { background: #efe4d4 !important; color: #5b4a34 !important; }
 .phone.skin-memo .inputbar { background: #efe4d4; color: #5b4a34; }
+.phone.skin-memo .homebar { background: #efe4d4; }
+.phone.skin-memo .homebar span { background: rgba(90,74,52,.55); }
 .phone.skin-memo .line-chat .appear { animation: memoIn .34s cubic-bezier(.22,1.2,.36,1) both; }
 @keyframes memoIn {
   from { opacity: 0; transform: scale(.9) translateY(10px) rotate(2deg); }
@@ -339,9 +341,12 @@ body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8
   color:#1f5b3c; background: linear-gradient(#dcffe9,#b6f0c9);
   box-shadow: inset 0 3px 6px rgba(255,255,255,.9), inset 0 -5px 9px rgba(90,190,140,.28), 0 6px 14px rgba(120,200,150,.30);
 }
-.phone.skin-jelly .line-chat .av { border:2px solid #fff; box-shadow: 0 2px 5px rgba(210,130,175,.45); }
+/* 光澤糖果貼紙頭像:圓角方、白框、糖果陰影+內反光、微傾 */
+.phone.skin-jelly .line-chat .av { border-radius: 42%; border: 3px solid #fff; box-shadow: 0 3px 8px rgba(210,120,175,.5), inset 0 2px 5px rgba(255,255,255,.95); transform: rotate(-3deg); }
 .phone.skin-jelly .statusbar, .phone.skin-jelly .linehead { background:#ffd6ea !important; color:#8a3a63 !important; }
 .phone.skin-jelly .inputbar { background:#ffd6ea; color:#8a3a63; }
+.phone.skin-jelly .homebar { background:#ffd6ea; }
+.phone.skin-jelly .homebar span { background: rgba(140,58,99,.5); }
 .phone.skin-jelly .line-chat .appear { animation: jellyIn .42s cubic-bezier(.18,1.5,.3,1) both; }
 @keyframes jellyIn { 0%{opacity:0;transform:scale(.5)} 55%{opacity:1;transform:scale(1.12)} 75%{transform:scale(.96)} 100%{transform:scale(1)} }
 
@@ -359,10 +364,13 @@ body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8
   box-shadow: 2px 3px 0 rgba(0,0,0,.13);
 }
 .phone.skin-doodle .line-chat .msg.me .bubble { background:#fff6c8; }
-.phone.skin-doodle .line-chat .av { border:2.5px solid #3a3a3a !important; box-shadow:none; }
+/* 手繪抖動墨框頭像:不規則圓、粗墨線、漫畫小陰影、微傾 */
+.phone.skin-doodle .line-chat .av { border:2.5px solid #3a3a3a !important; border-radius: 47% 53% 51% 49% / 52% 47% 53% 48% !important; box-shadow: 1.5px 2px 0 rgba(0,0,0,.16); transform: rotate(-3deg); }
 .phone.skin-doodle .statusbar, .phone.skin-doodle .linehead { background:#fffef8 !important; color:#3a3a3a !important; }
 .phone.skin-doodle .linehead { border-bottom:2.5px solid #3a3a3a; }
 .phone.skin-doodle .inputbar { background:#fffef8; color:#3a3a3a; border-top:2.5px solid #3a3a3a; }
+.phone.skin-doodle .homebar { background:#fffef8; }
+.phone.skin-doodle .homebar span { background:#3a3a3a; }
 .phone.skin-doodle .line-chat .appear { animation: doodleIn .32s ease-out both; }
 @keyframes doodleIn { from{opacity:0;transform:scale(.85) rotate(-3deg)} to{opacity:1;transform:scale(1) rotate(0)} }
 
@@ -381,8 +389,11 @@ body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8
   border-color:#00e5c0; color:#eafffb;
   box-shadow: 0 0 12px rgba(0,229,192,.55), inset 0 0 8px rgba(0,229,192,.22);
 }
-.phone.skin-pop .line-chat .av { border:2px solid #ff4fd8 !important; box-shadow:0 0 8px rgba(255,79,216,.6); }
+/* 霓虹雙圈頭像:青內框 + 洋紅外圈 + 發光、圓角方、微傾 */
+.phone.skin-pop .line-chat .av { border:2px solid #00e5c0 !important; border-radius: 32%; box-shadow: 0 0 10px rgba(0,229,192,.85), 0 0 0 3px rgba(255,79,216,.55); transform: rotate(-2deg); }
 .phone.skin-pop .statusbar, .phone.skin-pop .linehead { background:#0c0a14 !important; color:#f4f2ff !important; }
 .phone.skin-pop .inputbar { background:#0c0a14; color:#cfc9e6; }
+.phone.skin-pop .homebar { background:#0c0a14; }
+.phone.skin-pop .homebar span { background: rgba(255,255,255,.85); }
 .phone.skin-pop .line-chat .appear { animation: popIn .36s ease-out both; }
 @keyframes popIn { 0%{opacity:0;transform:scale(.7);box-shadow:0 0 26px rgba(255,79,216,.9)} 100%{opacity:1;transform:scale(1)} }
