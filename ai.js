@@ -525,13 +525,21 @@ async function fetchGeneratedBitmap(url) {
   if (!r.ok) throw new Error('下載成品失敗(HTTP ' + r.status + ')');
   return createImageBitmap(await r.blob());
 }
-function chromaKey(canvas) { // 貼圖格綠底轉透明(粗略版,夠用)
+function chromaKey(canvas) { // 貼圖綠底去背:四角取綠中位數當底色,色距去背+羽化+綠溢抑制(gpt-image 綠幕偏黃悶綠,固定比例門檻抓不到)
   const g = canvas.getContext('2d');
   const im = g.getImageData(0, 0, canvas.width, canvas.height), d = im.data;
+  const w = canvas.width, h = canvas.height, k = Math.max(4, Math.floor(h / 20)); // 每角取 k×k 區塊
+  const rs = [], gs = [], bs = [];
+  const push = (x, y) => { const o = (y * w + x) * 4; rs.push(d[o]); gs.push(d[o + 1]); bs.push(d[o + 2]); };
+  for (let y = 0; y < k; y++) for (let x = 0; x < k; x++) { push(x, y); push(w - 1 - x, y); push(x, h - 1 - y); push(w - 1 - x, h - 1 - y); } // 四角採樣
+  const med = (a) => { a.sort((p, q) => p - q); return a[a.length >> 1]; }; // 中位數抗雜訊:主體壓到角落也不致整體歪掉
+  const br = med(rs), bg = med(gs), bb = med(bs), lo = 45, hi = 95; // 色距 lo 內全透明、hi 外全保留、之間羽化
   for (let i = 0; i < d.length; i += 4) {
     const r = d[i], gr = d[i + 1], b = d[i + 2];
-    if (gr > 90 && gr > r * 1.35 && gr > b * 1.35) d[i + 3] = 0;
-    else if (gr > 80 && gr > r * 1.15 && gr > b * 1.15) d[i + 3] = Math.min(d[i + 3], 110);
+    const dist = Math.sqrt((r - br) ** 2 + (gr - bg) ** 2 + (b - bb) ** 2); // 與底色的歐氏色距
+    const a = Math.max(0, Math.min(1, (dist - lo) / (hi - lo))) * 255;
+    d[i + 3] = Math.min(d[i + 3], a);
+    if (a > 0 && a < 255) { const cap = Math.max(r, b); if (gr > cap) d[i + 1] = Math.min(gr, cap + 12); } // 邊緣綠溢抑制:綠不得高於紅/藍太多
   }
   g.putImageData(im, 0, 0);
 }
