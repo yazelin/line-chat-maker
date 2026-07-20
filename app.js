@@ -791,7 +791,7 @@ $('#export-mp4').addEventListener('click', async () => {
       while (ei < events.length && events[ei].at <= nowMs) {
         const { at, step } = events[ei++];
         const scrollBy = step.apply() || 0;
-        if (step.bubble) anims.push({ node: step.bubble, scrollFrom: chatEl.scrollTop, scrollBy, startMs: at });
+        if (step.bubble) anims.push({ node: step.bubble, scrollFrom: chatEl.scrollTop, scrollBy, startMs: at, baseTf: getComputedStyle(step.bubble).transform });
         dirty = true;
       }
       for (let k = anims.length - 1; k >= 0; k--) {
@@ -802,8 +802,10 @@ $('#export-mp4').addEventListener('click', async () => {
           anims.splice(k, 1);
         } else {
           const e2 = easeOut(Math.max(p, 0));
+          const s = (0.82 + 0.18 * e2).toFixed(3);            // 進場 scale .82→1 的俏皮 pop(取代單純上移)
+          const base = a.baseTf && a.baseTf !== 'none' ? a.baseTf + ' ' : ''; // 保留該則 skin 傾斜,不被進場 transform 覆蓋
           a.node.style.opacity = e2.toFixed(3);
-          a.node.style.transform = `translateY(${(6 * (1 - e2)).toFixed(2)}px)`;
+          a.node.style.transform = `${base}scale(${s})`;
           if (a.scrollBy) chatEl.scrollTop = a.scrollFrom + a.scrollBy * e2;
         }
         dirty = true;
