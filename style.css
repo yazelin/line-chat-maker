@@ -286,20 +286,38 @@ body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8
 .phone.skin-memo { --tilt-range: 4; }
 .phone.skin-memo .screen { background: #f4ece0; }
 .phone.skin-memo .line-chat { background: #f4ece0; }
+/* 次要文字在奶油底上要讀得到:暱稱、時間、已讀、日期/略分隔(baseline 為深底淺字,在此改暖色) */
+.phone.skin-memo .line-chat .who { color: #6b5a44; }
+.phone.skin-memo .line-chat .time, .phone.skin-memo .line-chat .read { color: #a08d74; }
+.phone.skin-memo .line-chat .date > *, .phone.skin-memo .line-chat .skip > * { background: rgba(107,90,68,.5); color: #fbf6ec; }
+/* 便利貼泡泡:紙感(方角、暖邊、紙紋、底部微捲陰影+頂部反光) */
 .phone.skin-memo .line-chat .msg .bubble {
-  background: #fffdf8; color: #3a3226;
-  border: 3px solid #fff; border-radius: 14px;
-  box-shadow: 0 2px 0 rgba(120,100,70,.18), 0 6px 14px rgba(120,100,70,.12);
+  position: relative; overflow: visible;
+  background-color: #fffdf8; color: #3a3226;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'120'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.85'%20numOctaves%3D'2'%20stitchTiles%3D'stitch'%2F%3E%3CfeColorMatrix%20type%3D'saturate'%20values%3D'0'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%20opacity%3D'0.09'%2F%3E%3C%2Fsvg%3E");
+  background-size: 100px 100px; background-blend-mode: multiply;
+  border: 1px solid #eee3ce; border-radius: 4px;
+  box-shadow: 0 3px 6px rgba(120,100,70,.20), inset 0 -8px 10px -8px rgba(150,130,95,.22), inset 0 1px 0 rgba(255,255,255,.7);
 }
-.phone.skin-memo .line-chat .msg.me .bubble { background: #eafbe6; color: #2b3a24; }
-.phone.skin-memo .linehead { position: relative; } /* 供紙膠帶 ::before 定位 */
+.phone.skin-memo .line-chat .msg.me .bubble { background-color: #eafbe6; color: #2b3a24; }
+/* 撕邊紙膠帶:只貼文字便利貼(有 .btxt),角度依每則 --tilt 微變 */
+.phone.skin-memo .line-chat .msg .bubble:has(.btxt)::before {
+  content: ''; position: absolute; top: -9px; left: 50%; margin-left: -28px; width: 56px; height: 16px;
+  background:
+    linear-gradient(90deg, rgba(126,199,178,.22), rgba(126,199,178,.52) 14%, rgba(126,199,178,.52) 86%, rgba(126,199,178,.22)),
+    linear-gradient(rgba(255,255,255,.30), rgba(255,255,255,0) 55%);
+  transform: rotate(calc(-3deg + var(--tilt, 0deg) * 4));
+  clip-path: polygon(0% 0%, 100% 0%, 89% 16.6%, 100% 33.3%, 89% 50%, 100% 66.6%, 89% 83.3%, 100% 100%, 0% 100%, 11% 83.3%, 0% 66.6%, 11% 50%, 0% 33.3%, 11% 16.6%);
+  filter: drop-shadow(0 1px 1px rgba(90,74,52,.20));
+}
+/* 拍立得頭像:白框、厚下緣、微傾 */
+.phone.skin-memo .line-chat .av {
+  border-radius: 2px; border: 3px solid #fff; border-bottom: 9px solid #fff;
+  background: #fff; object-fit: cover; box-sizing: content-box;
+  box-shadow: 0 2px 5px rgba(120,100,70,.30); transform: rotate(-4deg);
+}
 .phone.skin-memo .statusbar, .phone.skin-memo .linehead { background: #efe4d4 !important; color: #5b4a34 !important; }
 .phone.skin-memo .inputbar { background: #efe4d4; color: #5b4a34; }
-/* 紙膠帶裝飾:表頭上緣一條半透明斜貼 */
-.phone.skin-memo .linehead::before {
-  content: ''; position: absolute; left: 18px; top: -6px; width: 68px; height: 18px;
-  background: rgba(230,180,120,.55); transform: rotate(-4deg); border-radius: 2px;
-}
 .phone.skin-memo .line-chat .appear { animation: memoIn .34s cubic-bezier(.22,1.2,.36,1) both; }
 @keyframes memoIn {
   from { opacity: 0; transform: scale(.9) translateY(10px) rotate(2deg); }
