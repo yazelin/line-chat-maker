@@ -407,6 +407,9 @@ body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8
 /* Pop 暗底:假輸入框與 AI 懸浮鈕不能留 baseline 亮色 */
 .phone.skin-pop .inputbar .fakein { background: rgba(255,255,255,.09); color:#d5d5e2; }
 .phone.skin-pop .aifab { background: rgba(255,255,255,.08); color:#eafffb; border:1px solid rgba(0,229,192,.55); }
+/* Pop 霓虹感:狀態列/表頭圖示與標題加微光暈 */
+.phone.skin-pop .statusbar .sicons svg, .phone.skin-pop .linehead .hicons svg { filter: drop-shadow(0 0 2.5px rgba(0,229,192,.65)); }
+.phone.skin-pop .linehead .htitle { text-shadow: 0 0 6px rgba(0,229,192,.35); }
 /* 造型挖孔:鏡頭挖孔形狀隨 skin(亮 skin 用黑洞;Pop 暗底改霓虹發光六角,否則黑洞在暗底看不見) */
 .phone .notch.skinhole { top: 11px; width: 24px; height: 24px; background:#0a0a0c; border-radius:0; clip-path: circle(45%); }
 .phone.skin-memo .notch.skinhole { clip-path: polygon(50% 2%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
