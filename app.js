@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, font: '', sysColor: '#2d3b4e', theme: 'light', skin: 'memo', aiFab: true, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, wmText: 'LINE 對話製造機', clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, sbAlarm: true, sbArrows: true, sbVolte: true, sbSignal: true, sbBatt: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, font: '', sysColor: '#2d3b4e', theme: 'light', skin: 'memo', playfulness: 0.5, aiFab: true, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, wmText: 'LINE 對話製造機', clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, sbAlarm: true, sbArrows: true, sbVolte: true, sbSignal: true, sbBatt: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -133,6 +133,12 @@ function glowShadow(st) {
 
 function personOf(m) { return state.people.find((p) => p.id === m.personId) || { id: null, name: '???', avatar: null }; }
 
+// 依整數 seed 產一個 [-1,1] 的穩定偽亂數(重繪同 seed 同值,匯出與預覽一致)
+function tiltUnit(seed) {
+  const x = Math.sin((seed + 1) * 12.9898) * 43758.5453;
+  return (x - Math.floor(x)) * 2 - 1; // [-1,1)
+}
+
 function render() {
   const st = state.settings;
   $('#set-title').value = st.title;
@@ -204,6 +210,8 @@ function render() {
 
   const phone = $('#phone');
   phone.className = 'phone level-' + st.frameLevel + (st.height === 'fixed' ? ' fixedh' : '') + ' theme-' + (st.theme || 'light') + (st.mode === 'dm' ? ' mode-dm' : ' mode-group') + ' skin-' + window.LCM_SKINS.resolveSkin(st);
+  phone.style.setProperty('--playful', st.playfulness == null ? 0.5 : st.playfulness);
+  const pf = document.querySelector('#set-playful'); if (pf) pf.value = st.playfulness == null ? 0.5 : st.playfulness;
   const screen = $('#phone .screen');
   screen.style.fontFamily = st.font || '';
   screen.style.height = st.height === 'fixed' ? (st.heightPx || 768) + 'px' : '';
@@ -309,6 +317,7 @@ function render() {
       node.appendChild(body);
     }
     node.appendChild(controls(m, i));
+    node.style.setProperty('--tilt', tiltUnit(i).toFixed(2) + 'deg'); // 基礎 ±1deg;各 skin 以 --tilt-range 放大;seed(訊息位置索引)穩定 → 重繪/匯出不跳
     chatEl.appendChild(node);
   });
   if (state.settings.height === 'fixed') chatEl.scrollTop = chatEl.scrollHeight;
@@ -485,6 +494,12 @@ $('#set-theme').addEventListener('change', (e) => {
 document.querySelector('#set-skin').addEventListener('change', (e) => {
   state.settings.skin = e.target.value;
   save(); render();
+});
+document.querySelector('#set-playful').addEventListener('input', (e) => {
+  state.settings.playfulness = parseFloat(e.target.value);
+  document.querySelector('#phone').style.setProperty('--playful', state.settings.playfulness);
+  // 只動 CSS 變數即時反映,不必整頁重繪;仍需存檔
+  save();
 });
 $('#set-aifab').addEventListener('change', (e) => { state.settings.aiFab = e.target.checked; save(); render(); });
 $('#set-heightpx').addEventListener('input', (e) => { state.settings.heightPx = Math.max(300, +e.target.value || 768); save(); render(); });
