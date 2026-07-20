@@ -446,8 +446,10 @@ function el(tag, cls) { const n = document.createElement(tag); if (cls) n.classN
 // 刻意不加浮水印/隱形識別:這是可再編輯的素材源;合成後的 PNG/MP4 匯出才會烙印。與 PNG/JSON 匯出同一套 a.download 手法。
 function safeFileName(s) { return String(s == null ? '' : s).replace(/[\\/:*?"<>|]+/g, '_').trim() || '未命名'; }
 function downloadCellImage(dataUrl, filename) {
+  const mime = (String(dataUrl).match(/^data:image\/([a-z0-9.+-]+)/i) || ['', ''])[1].toLowerCase();
+  const ext = mime === 'jpeg' ? 'jpg' : (mime || 'png'); // 副檔名跟著實際 data URL 的型別走(匯入的草稿可能帶 jpg 頭像)
   const a = document.createElement('a');
-  a.download = filename;
+  a.download = filename.replace(/\.[^./]+$/, '') + '.' + ext;
   a.href = dataUrl;
   a.click();
 }

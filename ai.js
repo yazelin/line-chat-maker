@@ -562,22 +562,44 @@ function drawSlot(img, sx, sy, sw, sh, type) {
 function applyGrid(img, grid, cells) { // 切圖回填共用:網格圖 → 各格 dataURL → 寫回 state
   const cw = img.width / grid.cols, ch = img.height / grid.rows, inset = 0.08;
   cells.forEach((c, i) => {
+    if (c.skip) return; // 取回時目標已對不上的格:仍佔格位維持切圖對位,但不回填避免貼錯
     const col = i % grid.cols, row = Math.floor(i / grid.cols);
     const dataUrl = drawSlot(img, col * cw + cw * inset, row * ch + ch * inset, cw * (1 - inset * 2), ch * (1 - inset * 2), c.type);
     if (c.type === 'avatar') { const p = state.people[c.personIndex]; if (p) { p.avatar = dataUrl; p.avatarPrompt = c.prompt; } }
     else { const m = state.messages[c.msgIndex]; if (m) { m.img = dataUrl; m.imgPrompt = c.prompt; } }
   });
 }
+function validateFillCells(cells, messages, people) { // 取回時比對指紋:回傳同長度 cells(對不上的標 skip)與略過數,避免草稿變動後貼錯格
+  let skipped = 0;
+  const out = cells.map((c) => {
+    if (c.type === 'avatar') {
+      const idx = c.personId != null ? people.findIndex((p) => p.id === c.personId) : c.personIndex; // 用穩定 personId 重新定位,抗人物重排
+      if (idx == null || idx < 0 || !people[idx]) { skipped++; return Object.assign({}, c, { skip: true }); }
+      return Object.assign({}, c, { personIndex: idx });
+    }
+    const m = messages[c.msgIndex], fp = c.fp;
+    if (!m || (fp && (m.time !== fp.time || m.kind !== fp.kind || m.personId !== fp.personId || m.side !== fp.side))) { skipped++; return Object.assign({}, c, { skip: true }); }
+    return c;
+  });
+  return { cells: out, skipped };
+}
 // ── 取回上次補圖:補圖送出 job 後把重建切圖所需的最小資訊存進 localStorage;逾時/報錯不清,事後可一鍵查後端把已生成的結果切回 ──
 const FILL_PENDING_KEY = 'lcm-fill-pending';
 function savePending(jobId, grid, cells) { // cells = 扁平版 [{type,msgIndex?,personIndex?,prompt}]
+  // 蓋上目標指紋:頭像用穩定的 personId(可抗人物重排)、訊息用 time/kind/personId/side,
+  // 取回時若草稿已變動、指紋對不上就略過該格,避免把圖靜默貼到錯的訊息/人物上。
+  const stamped = cells.map((c) => {
+    if (c.type === 'avatar') { const p = state.people[c.personIndex]; return Object.assign({}, c, { personId: p && p.id }); }
+    const m = state.messages[c.msgIndex];
+    return Object.assign({}, c, { fp: m ? { time: m.time, kind: m.kind, personId: m.personId, side: m.side } : null });
+  });
   try {
     localStorage.setItem(FILL_PENDING_KEY, JSON.stringify({
       draftId: currentId,
       provider: imgCfg().provider, // 'free' 或 'codex'(同步 provider 不會走到這)
       jobId,
       grid: { cols: grid.cols, rows: grid.rows },
-      cells,
+      cells: stamped,
       msgLen: state.messages.length,
       peopleLen: state.people.length,
       ts: Date.now(),
@@ -627,16 +649,17 @@ async function recoverFill() {
     if (res.dead) { log('上次的補圖結果已過期或失敗;已清除紀錄。', 'err'); toast('補圖結果已過期;已清除'); clearPending(); }
     else if (!res.done) { log('後端仍在生成;請稍後再按「取回上次補圖」。', 'warn'); toast('圖還在生成;稍後再取回'); }
     else {
-      if (record.msgLen !== state.messages.length || record.peopleLen !== state.people.length) {
-        toast('草稿已變動;回填位置可能不準');
-        log('草稿訊息／人物數量與補圖當下不同;仍照原索引回填。', 'warn');
+      const v = validateFillCells(record.cells, state.messages, state.people);
+      if (v.skipped) {
+        toast('草稿已變動;跳過 ' + v.skipped + ' 格避免貼錯');
+        log('有 ' + v.skipped + ' 格的目標訊息／人物已變動,為避免貼錯已略過(可重新補圖)。', 'warn');
       }
-      applyGrid(res.img, record.grid, record.cells);
+      applyGrid(res.img, record.grid, v.cells);
       aiUndoStack.push({ draftId: currentId, snap: before });
       if (aiUndoStack.length > 20) aiUndoStack.shift();
       updateUndoButton(); save(); render();
       clearPending();
-      log(`已取回並回填 ${record.cells.length} 格。不滿意可「還原上一步」。`, 'done');
+      log(`已取回並回填 ${record.cells.length - v.skipped} 格。不滿意可「還原上一步」。`, 'done');
       toast('已取回上次補圖');
     }
   } catch (e) {
