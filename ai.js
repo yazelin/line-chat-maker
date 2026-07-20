@@ -105,7 +105,7 @@ const SYSTEM = `你是「LINE 對話製造機」網頁內建的 AI 助手,幫創
 整個畫面由一份腳本 JSON 驅動:{ settings, people, messages }。你用工具讀取與修改這份腳本,畫面立即更新。
 
 schema 重點:
-- settings:title(聊天室名稱)、members(0=不顯示)、skin(外觀風格 "memo"預設/"jelly"/"doodle"/"pop")、mode("group"|"dm")、clock(狀態列時間)、frameLevel("phone"|"screen"|"chat")、watermark、height("auto"|"fixed")、heightPx、draft(輸入框未送出文字)、announceOn/announce(置頂公告)。bg/theme/sysColor 僅 skin="real"(本機限定)有效,玩樂 skin 各自配色。只改需要的欄位。
+- settings:title(聊天室名稱)、members(0=不顯示)、skin(外觀風格 "memo"預設/"jelly"/"doodle"/"pop"/"ink"/"real")、mode("group"|"dm")、clock(狀態列時間)、frameLevel("phone"|"screen"|"chat")、watermark、height("auto"|"fixed")、heightPx、draft(輸入框未送出文字)、announceOn/announce(置頂公告)。bg/theme/sysColor 僅 skin="real" 有效,其餘 skin 各自配色。只改需要的欄位。
 - mode:"dm"(1對1)時 title 必須=對方(左側那位)的名字、members 給 0;mode:"group" 時 title=群組名稱、members 給合理人數。title **絕不含人數**:劇本群名若尾帶「(3)」,拆開——title 去掉它、members=3(畫面自動顯示人數,寫進 title 會重複)。
 - people:[{id,name,avatar}],avatar 是圖片(@imgN 佔位符或 null=灰底圓)。
 - messages 依序渲染:

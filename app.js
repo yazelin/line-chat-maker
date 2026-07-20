@@ -517,13 +517,11 @@ $('#set-theme').addEventListener('change', (e) => {
   state.settings.sysColor = e.target.value === 'dark' ? '#0f1216' : '#2d3b4e';
   save(); render();
 });
-// 依旗標填 skin 選單:一般訪客只看到玩樂四款;本機設 lcm-real 才多出 real
+// 填 skin 選單(六款,含真實)
 (function initSkinPicker() {
   const sel = document.querySelector('#set-skin');
-  const showReal = window.LCM_SKINS.realEnabled();
   sel.innerHTML = '';
   for (const s of window.LCM_SKINS.SKINS) {
-    if (s.hidden && !showReal) continue;
     const o = document.createElement('option');
     o.value = s.id; o.textContent = s.label;
     sel.appendChild(o);
