@@ -198,7 +198,7 @@ function render() {
   $('#grp-sb').style.display = st.frameLevel === 'chat' ? 'none' : '';
 
   const phone = $('#phone');
-  phone.className = 'phone level-' + st.frameLevel + (st.height === 'fixed' ? ' fixedh' : '') + ' theme-' + (st.theme || 'light') + (st.mode === 'dm' ? ' mode-dm' : ' mode-group');
+  phone.className = 'phone level-' + st.frameLevel + (st.height === 'fixed' ? ' fixedh' : '') + ' theme-' + (st.theme || 'light') + (st.mode === 'dm' ? ' mode-dm' : ' mode-group') + ' skin-' + window.LCM_SKINS.resolveSkin(st);
   const screen = $('#phone .screen');
   screen.style.fontFamily = st.font || '';
   screen.style.height = st.height === 'fixed' ? (st.heightPx || 768) + 'px' : '';
