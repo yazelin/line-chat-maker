@@ -2,7 +2,7 @@
 'use strict';
 
 const DEMO = {
-  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, font: '', sysColor: '#2d3b4e', theme: 'light', aiFab: true, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, wmText: 'LINE 對話製造機', clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, sbAlarm: true, sbArrows: true, sbVolte: true, sbSignal: true, sbBatt: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
+  settings: { title: 'C# Taiwan交流聚會', members: 1947, bg: '#7d9bc1', bgImage: null, font: '', sysColor: '#2d3b4e', theme: 'light', skin: 'memo', playfulness: 0.5, aiFab: true, frameLevel: 'phone', notch: 'island', radius: 32, buttons: true, homebar: true, watermark: true, wmText: 'LINE 對話製造機', clock: '16:08', signal: 4, wifi: true, battery: 87, battText: true, sbAlarm: true, sbArrows: true, sbVolte: true, sbSignal: true, sbBatt: true, glow: 0, glowColor: '#96b9ff', darkUI: false, backlight: 0, backColor: '#06c755', height: 'fixed', heightPx: 768, mode: 'group', draft: '', announceOn: false, embedAutoplay: false, announce: '下次聚會 7/26(六)14:00 台北;新朋友先看記事本' },
   people: [
     { id: 'p1', name: '中年攻城屍', avatar: null },
     { id: 'p2', name: '小白++', avatar: null },
@@ -95,6 +95,23 @@ function toast(msg) {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3200);
 }
 
+async function seedPresets() { // 首次啟動:把內建範例(每款 skin 一份)種成草稿,新使用者一開「草稿」分頁就看得到
+  try {
+    const res = await fetch('./presets.json');
+    if (!res.ok) return false;
+    const presets = await res.json();
+    if (!Array.isArray(presets) || !presets.length) return false;
+    let first = null;
+    for (let i = presets.length - 1; i >= 0; i--) { // 反序種:陣列首項最後種→updatedAt 最新→列在草稿最上、也是啟用那份
+      const p = presets[i];
+      const d = await createDraft(migrate(p.state), p.name || (p.state.settings && p.state.settings.title));
+      if (i === 0) first = d;
+    }
+    if (first) { activate(first); return true; }
+    return false;
+  } catch (e) { console.warn('內建範例載入失敗', e); return false; }
+}
+
 async function boot() {
   try { await idbOpen(); } catch (e) { idbDead = true; console.warn('IndexedDB 不可用,本次僅記憶體運作,請匯出 JSON 備份', e); }
   try { // 收件匣:AI/Playwright 注入 + 舊版一次性遷移,同一條規則
@@ -113,7 +130,7 @@ async function boot() {
     const all = idbDead ? [] : await draftAll().catch(() => []);
     const d = all.find((x) => x.id === localStorage.getItem('lcm-current')) || all.sort((a, b) => b.updatedAt - a.updatedAt)[0];
     if (d) activate(d);
-    else activate(await createDraft(migrate(JSON.parse(JSON.stringify(DEMO))), '範例'));
+    else if (!(await seedPresets())) activate(await createDraft(migrate(JSON.parse(JSON.stringify(DEMO))), '範例'));
   }
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   render();
@@ -132,6 +149,12 @@ function glowShadow(st) {
 }
 
 function personOf(m) { return state.people.find((p) => p.id === m.personId) || { id: null, name: '???', avatar: null }; }
+
+// 依整數 seed 產一個 [-1,1] 的穩定偽亂數(重繪同 seed 同值,匯出與預覽一致)
+function tiltUnit(seed) {
+  const x = Math.sin((seed + 1) * 12.9898) * 43758.5453;
+  return (x - Math.floor(x)) * 2 - 1; // [-1,1)
+}
 
 function render() {
   const st = state.settings;
@@ -180,13 +203,20 @@ function render() {
   $('#set-mode').value = st.mode || 'group';
   $('#set-syscolor').value = st.sysColor || '#2d3b4e';
   $('#set-theme').value = st.theme || 'light';
+  const eff = window.LCM_SKINS.resolveSkin(st);
+  const skinSel = document.querySelector('#set-skin');
+  if (skinSel) skinSel.value = eff;
+  const realOnly = document.querySelector('#real-only');
+  if (realOnly) realOnly.hidden = eff !== 'real'; // 佈景/系統色只在真實 skin 下有意義
   $('#set-aifab').checked = st.aiFab !== false;
   $('#ai-fab').style.display = st.aiFab === false ? 'none' : '';
-  { // 系統顏色:狀態列+表頭底色,依亮度自動配黑/白前景
+  if (eff === 'real') { // 系統顏色:狀態列+表頭底色,依亮度自動配黑/白前景(僅真實 skin;玩樂 skin 交給 skin CSS)
     const sys = st.sysColor || '#2d3b4e';
     const lum = 0.2126 * parseInt(sys.slice(1, 3), 16) + 0.7152 * parseInt(sys.slice(3, 5), 16) + 0.0722 * parseInt(sys.slice(5, 7), 16);
     const sysFg = lum > 150 ? '#17181a' : '#fff';
     for (const sel of ['#phone .statusbar', '#phone .linehead']) { const n = $(sel); n.style.background = sys; n.style.color = sysFg; }
+  } else { // 玩樂 skin:清掉 inline 色,讓 .phone.skin-* CSS 生效
+    for (const sel of ['#phone .statusbar', '#phone .linehead']) { const n = $(sel); n.style.background = ''; n.style.color = ''; }
   }
   const fsel = $('#set-font');
   if (st.font && !Array.from(fsel.options).some((o) => o.value === st.font)) {
@@ -198,7 +228,9 @@ function render() {
   $('#grp-sb').style.display = st.frameLevel === 'chat' ? 'none' : '';
 
   const phone = $('#phone');
-  phone.className = 'phone level-' + st.frameLevel + (st.height === 'fixed' ? ' fixedh' : '') + ' theme-' + (st.theme || 'light') + (st.mode === 'dm' ? ' mode-dm' : ' mode-group');
+  phone.className = 'phone level-' + st.frameLevel + (st.height === 'fixed' ? ' fixedh' : '') + ' theme-' + (st.theme || 'light') + (st.mode === 'dm' ? ' mode-dm' : ' mode-group') + ' skin-' + window.LCM_SKINS.resolveSkin(st);
+  phone.style.setProperty('--playful', st.playfulness == null ? 0.5 : st.playfulness);
+  const pf = document.querySelector('#set-playful'); if (pf) pf.value = st.playfulness == null ? 0.5 : st.playfulness;
   const screen = $('#phone .screen');
   screen.style.fontFamily = st.font || '';
   screen.style.height = st.height === 'fixed' ? (st.heightPx || 768) + 'px' : '';
@@ -251,8 +283,13 @@ function render() {
   $('#chat-title').textContent = st.title;
   $('#chat-members').textContent = !dm && st.members > 0 ? `(${(+st.members).toLocaleString('en-US')})` : ''; // LINE 千分位
   $('#chat-members').style.display = !dm && st.members > 0 ? '' : 'none';
-  chatEl.style.background = st.bg;
-  chatEl.style.backgroundImage = st.bgImage ? `url(${st.bgImage})` : '';
+  if (eff === 'real') {
+    chatEl.style.background = st.bg;
+    chatEl.style.backgroundImage = st.bgImage ? `url(${st.bgImage})` : '';
+  } else { // 玩樂 skin:清掉 inline 背景色/圖,讓 .phone.skin-* .line-chat 的 CSS 生效
+    chatEl.style.background = '';
+    chatEl.style.backgroundImage = '';
+  }
   chatEl.style.backgroundSize = 'cover';
   chatEl.style.backgroundPosition = 'center';
 
@@ -284,7 +321,8 @@ function render() {
         const p = personOf(m);
         const av = el('img', 'av'); av.alt = '';
         if (p.avatar) av.src = p.avatar; else av.removeAttribute('src');
-        av.title = '點擊換頭像'; av.addEventListener('click', () => { avatarTarget = p.id; $('#file-avatar').click(); });
+        av.title = '點擊換頭像;右鍵下載頭像'; av.addEventListener('click', () => { avatarTarget = p.id; $('#file-avatar').click(); });
+        av.addEventListener('contextmenu', (e) => { e.preventDefault(); if (!p.avatar) { toast('這個人物還沒有頭像'); return; } downloadCellImage(p.avatar, 'avatar-' + window.LCM_PURE.safeFileName(p.name) + '.png'); });
         node.appendChild(av);
       }
       const body = el('div', 'mbody');
@@ -304,6 +342,7 @@ function render() {
       node.appendChild(body);
     }
     node.appendChild(controls(m, i));
+    node.style.setProperty('--tilt', tiltUnit(i).toFixed(2) + 'deg'); // 基礎 ±1deg;各 skin 以 --tilt-range 放大;seed(訊息位置索引)穩定 → 重繪/匯出不跳
     chatEl.appendChild(node);
   });
   if (state.settings.height === 'fixed') chatEl.scrollTop = chatEl.scrollHeight;
@@ -405,6 +444,7 @@ function controls(m, i) {
   btn('↓', '下移', () => { if (i < state.messages.length - 1) { state.messages.splice(i + 1, 0, state.messages.splice(i, 1)[0]); save(); render(); } });
   if (m.type === 'msg') {
     if ((m.kind === 'image' || m.kind === 'sticker') && m.imgPrompt && window.lcmRegenImage) btn('重生', 'AI 重畫這張圖(可還原)', () => window.lcmRegenImage(i));
+    if ((m.kind === 'image' || m.kind === 'sticker') && m.img) btn('下載', '下載這張圖,改完可用「點擊換圖」重新上傳', () => downloadCellImage(m.img, m.kind === 'sticker' ? 'sticker-' + i + '.png' : 'image-' + i + '.jpg'));
     btn('⇄', '換邊', () => { if (m.side === 'left') { m.side = 'right'; m.read = m.read || ''; } else { m.side = 'left'; m.personId = m.personId || state.people[0].id; } save(); render(); });
     if ((m.kind || 'text') === 'text') btn('引', '加/移除引用回覆', () => { m.quote = m.quote ? null : { name: '某人', text: '被引用的訊息' }; save(); render(); });
     btn('心', '加/移除表情回應', () => { m.react = m.react && m.react.length ? null : ['😆']; save(); render(); });
@@ -418,6 +458,15 @@ function controls(m, i) {
 }
 
 function el(tag, cls) { const n = document.createElement(tag); if (cls) n.className = cls; return n; }
+
+// ── 下載對話內單張圖:輸出使用者上傳/AI 生成的原圖(data URL),供外部改圖後,再走既有「點擊換圖/換頭像」重新上傳 ──
+// 刻意不加浮水印/隱形識別:這是可再編輯的素材源;合成後的 PNG/MP4 匯出才會烙印。與 PNG/JSON 匯出同一套 a.download 手法。
+function downloadCellImage(dataUrl, filename) {
+  const a = document.createElement('a');
+  a.download = window.LCM_PURE.downloadName(dataUrl, filename); // 檔名安全化 + 副檔名邏輯見 pure.js
+  a.href = dataUrl;
+  a.click();
+}
 
 // ── 設定面板 ──
 $('#set-title').addEventListener('input', (e) => { state.settings.title = e.target.value; save(); render(); });
@@ -464,6 +513,26 @@ $('#set-theme').addEventListener('change', (e) => {
   state.settings.theme = e.target.value; // 切佈景順手帶合理系統色(仍可再改)
   state.settings.sysColor = e.target.value === 'dark' ? '#0f1216' : '#2d3b4e';
   save(); render();
+});
+// 填 skin 選單(六款,含真實)
+(function initSkinPicker() {
+  const sel = document.querySelector('#set-skin');
+  sel.innerHTML = '';
+  for (const s of window.LCM_SKINS.SKINS) {
+    const o = document.createElement('option');
+    o.value = s.id; o.textContent = s.label;
+    sel.appendChild(o);
+  }
+})();
+document.querySelector('#set-skin').addEventListener('change', (e) => {
+  state.settings.skin = e.target.value;
+  save(); render();
+});
+document.querySelector('#set-playful').addEventListener('input', (e) => {
+  state.settings.playfulness = parseFloat(e.target.value);
+  document.querySelector('#phone').style.setProperty('--playful', state.settings.playfulness);
+  // 只動 CSS 變數即時反映,不必整頁重繪;仍需存檔
+  save();
 });
 $('#set-aifab').addEventListener('change', (e) => { state.settings.aiFab = e.target.checked; save(); render(); });
 $('#set-heightpx').addEventListener('input', (e) => { state.settings.heightPx = Math.max(300, +e.target.value || 768); save(); render(); });
@@ -748,7 +817,7 @@ $('#export-mp4').addEventListener('click', async () => {
       while (ei < events.length && events[ei].at <= nowMs) {
         const { at, step } = events[ei++];
         const scrollBy = step.apply() || 0;
-        if (step.bubble) anims.push({ node: step.bubble, scrollFrom: chatEl.scrollTop, scrollBy, startMs: at });
+        if (step.bubble) anims.push({ node: step.bubble, scrollFrom: chatEl.scrollTop, scrollBy, startMs: at, baseTf: getComputedStyle(step.bubble).transform });
         dirty = true;
       }
       for (let k = anims.length - 1; k >= 0; k--) {
@@ -759,8 +828,10 @@ $('#export-mp4').addEventListener('click', async () => {
           anims.splice(k, 1);
         } else {
           const e2 = easeOut(Math.max(p, 0));
+          const s = (0.82 + 0.18 * e2).toFixed(3);            // 進場 scale .82→1 的俏皮 pop(取代單純上移)
+          const base = a.baseTf && a.baseTf !== 'none' ? a.baseTf + ' ' : ''; // 保留該則 skin 傾斜,不被進場 transform 覆蓋
           a.node.style.opacity = e2.toFixed(3);
-          a.node.style.transform = `translateY(${(6 * (1 - e2)).toFixed(2)}px)`;
+          a.node.style.transform = `${base}scale(${s})`;
           if (a.scrollBy) chatEl.scrollTop = a.scrollFrom + a.scrollBy * e2;
         }
         dirty = true;
@@ -973,6 +1044,10 @@ async function playback() {
       await new Promise((r) => setTimeout(r, 75));
     }
   }
+  // 清掉進場定格:skin 進場動畫用 fill:both,若留著 .appear 會把泡泡定在結尾的 rotate(0),蓋掉基礎傾斜
+  // (且緊接著匯出 PNG 會 clone 到帶 .appear 的節點,有 from:opacity0 半途風險)。清掉後 transform 交還基礎傾斜,基礎規則的 .15s transition 讓它平滑落定。
+  await new Promise((r) => setTimeout(r, 500)); // 等最後一則進場動畫跑完再清
+  nodes.forEach((n) => n.classList.remove('appear'));
 }
 
 document.querySelectorAll('.tabs .tab').forEach((t) => t.addEventListener('click', () => {

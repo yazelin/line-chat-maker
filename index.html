@@ -43,20 +43,24 @@
     <label>聊天類型 <select id="set-mode"><option value="group">群組</option><option value="dm">1對1</option></select></label>
     <label>聊天室名稱(1對1=對方名字) <input id="set-title" type="text"></label>
     <label>成員數(0=不顯示) <input id="set-members" type="number" min="0"></label>
-    <label>背景色 <input id="set-bg" type="color"></label>
-    <label>背景圖 <span class="addbar"><button id="set-bgimg" type="button">選圖</button><button id="clear-bgimg" type="button">清除</button></span></label>
     <label class="row"><input id="set-announce" type="checkbox"> 置頂公告(文字在預覽上直接改)</label>
     <p class="hint">訊息在右邊直接編:點文字改字、點暱稱改名、點頭像換圖;hover 出現小按鈕(上移/下移/換邊/引用/換人/新人/刪除)。連續同一人的訊息會照 LINE 慣例省略暱稱,要換人就用「換人/新人」。這些編輯痕跡匯出時都不會出現。</p>
     </section>
 
     <section class="pane" id="pane-frameset">
+    <label>風格 <select id="set-skin"></select></label>
+    <label>俏皮度 <input id="set-playful" type="range" min="0" max="1" step="0.05" value="0.5"></label>
+    <span id="real-only" hidden>
+    <label>背景色 <input id="set-bg" type="color"></label>
+    <label>背景圖 <span class="addbar"><button id="set-bgimg" type="button">選圖</button><button id="clear-bgimg" type="button">清除</button></span></label>
     <label>系統顏色(狀態列+表頭) <span class="addbar"><input id="set-syscolor" type="color"><button id="syscolor-reset" type="button">重置預設</button></span></label>
     <label>佈景 <select id="set-theme"><option value="light">亮色</option><option value="dark">深色(LINE 深色模式)</option></select></label>
+    </span>
     <label class="row"><input id="set-aifab" type="checkbox"> LINE AI 懸浮鈕</label>
     <label>外框程度 <select id="set-frame-level"><option value="phone">包含手機</option><option value="screen">螢幕擷圖</option><option value="chat">僅對話</option></select></label>
     <div id="grp-hw">
     <h2>手機硬體</h2>
-    <label>鏡頭型式 <select id="set-notch"><option value="island">動態島</option><option value="notch">瀏海</option><option value="punch">挖孔</option><option value="none">滿版</option></select></label>
+    <label>鏡頭型式 <select id="set-notch"><option value="island">動態島</option><option value="notch">瀏海</option><option value="punch">挖孔</option><option value="skinhole">造型挖孔</option><option value="none">滿版</option></select></label>
     <label>螢幕圓角 <input id="set-radius" type="range" min="0" max="48" step="2"> <span id="radius-val"></span>px</label>
     <label class="row"><input id="set-buttons" type="checkbox"> 側邊按鈕(音量/電源)</label>
     <label class="row"><input id="set-homebar" type="checkbox"> 底部手勢條(home bar)</label>
@@ -143,6 +147,7 @@
     <div class="addbar">
       <button id="ai-run" class="primary">開始製作 LINE 對話</button>
       <button id="ai-images" title="把腳本裡還沒有圖的貼圖/照片/頭像,一次生成回填(每日限量)">AI 補圖</button>
+      <button id="ai-recover" hidden title="上次補圖逾時、但後端可能已生成好;按這裡把結果切回並回填">取回上次補圖</button>
       <button id="ai-stop" hidden>停止</button>
     </div>
     <p class="hint">依上面的劇本製作;劇本欄留空則直接照主題發揮。做完按「AI 補圖」一次生成所有貼圖/照片/頭像(可還原、單張可重生);想小改用預覽下方的「AI 微調」列。</p>
@@ -163,6 +168,7 @@
       <button id="import-json">匯入腳本 JSON</button>
       <button id="reset">清空重來</button>
     </div>
+    <p class="hint">做好了想分享?把匯出的 MP4 或 PNG 拖進<a href="https://github.com/yazelin/line-chat-maker/discussions/categories/show-and-tell" target="_blank" rel="noopener">作品分享討論區</a>,再貼上「複製分享連結」的網址,大家就看得到你的作品、點連結還能接著改。</p>
     <p class="hint">PNG=圖片;「嵌入」複製一段 HTML 貼進任何網頁;「分享連結」複製一個網址,對方打開就看到這段對話(可貼 FB/LINE)。腳本 JSON 讓你存檔、分享,也讓 AI 直接生成整段對話(見 repo 的 skills/)。僅供創作示意,請勿用於詐騙或誤導;匯出的圖一律嵌入隱形識別標記,任何人可到<a href="verify.html" target="_blank">驗證頁</a>確認一張圖是否由本工具產生。</p>
     </section>
 
@@ -246,6 +252,8 @@
 <input type="file" id="file-json" accept="application/json" hidden>
 <script src="vendor/html2canvas.min.js"></script>
 <script src="vendor/mp4-muxer.min.js"></script>
+<script src="skin.js"></script>
+<script src="pure.js"></script>
 <script src="app.js"></script>
 <script src="ai.js"></script>
 <!-- yz-promo-footer v8 | 三件套+BMC 注意力效果 | https://github.com/yazelin/promo-footer-skill -->

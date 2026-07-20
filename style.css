@@ -277,3 +277,180 @@ body.dark #ai-settings summary { color: #e5e2de; }
 @media (max-width: 640px) { .ai-quota { position: static; display: inline-block; margin-top: 0.3rem; } }
 body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8; }
 .footer .ver { opacity: 0.7; margin-left: 0.3rem; }
+
+/* 玩樂基礎:傾斜由 --tilt(每泡)× --playful(全域)× 各 skin 的 --tilt-range 決定;real skin 不設 --tilt-range 故為 0 */
+.phone { --playful: 0.5; }
+.phone[class*="skin-"]:not(.skin-real) .line-chat .msg { transform: rotate(calc(var(--tilt, 0deg) * var(--playful, .5) * var(--tilt-range, 0))); transition: transform .15s ease; }
+
+/* ===== skin: Memo 貼紙手帳 ===== */
+.phone.skin-memo { --tilt-range: 4; }
+.phone.skin-memo .screen { background: #f4ece0; }
+.phone.skin-memo .line-chat { background: #f4ece0; }
+/* 次要文字在奶油底上要讀得到:暱稱、時間、已讀、日期/略分隔(baseline 為深底淺字,在此改暖色) */
+.phone.skin-memo .line-chat .who { color: #6b5a44; }
+.phone.skin-memo .line-chat .time, .phone.skin-memo .line-chat .read { color: #a08d74; }
+.phone.skin-memo .line-chat .date > *, .phone.skin-memo .line-chat .skip > * { background: rgba(107,90,68,.5); color: #fbf6ec; }
+/* 便利貼泡泡:紙感(方角、暖邊、紙紋、底部微捲陰影+頂部反光) */
+.phone.skin-memo .line-chat .msg .bubble {
+  position: relative; overflow: visible;
+  background-color: #fffdf8; color: #3a3226;
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'120'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.85'%20numOctaves%3D'2'%20stitchTiles%3D'stitch'%2F%3E%3CfeColorMatrix%20type%3D'saturate'%20values%3D'0'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%20opacity%3D'0.09'%2F%3E%3C%2Fsvg%3E");
+  background-size: 100px 100px; background-blend-mode: multiply;
+  border: 1px solid #eee3ce; border-radius: 4px;
+  box-shadow: 0 3px 6px rgba(120,100,70,.20), inset 0 -8px 10px -8px rgba(150,130,95,.22), inset 0 1px 0 rgba(255,255,255,.7);
+}
+.phone.skin-memo .line-chat .msg.me .bubble { background-color: #eafbe6; color: #2b3a24; }
+/* 撕邊紙膠帶:只貼文字便利貼(有 .btxt),角度依每則 --tilt 微變 */
+.phone.skin-memo .line-chat .msg .bubble:has(.btxt)::before {
+  content: ''; position: absolute; top: -9px; left: 50%; margin-left: -28px; width: 56px; height: 16px;
+  background:
+    linear-gradient(90deg, rgba(126,199,178,.22), rgba(126,199,178,.52) 14%, rgba(126,199,178,.52) 86%, rgba(126,199,178,.22)),
+    linear-gradient(rgba(255,255,255,.30), rgba(255,255,255,0) 55%);
+  transform: rotate(calc(-3deg + var(--tilt, 0deg) * 4));
+  clip-path: polygon(0% 0%, 100% 0%, 89% 16.6%, 100% 33.3%, 89% 50%, 100% 66.6%, 89% 83.3%, 100% 100%, 0% 100%, 11% 83.3%, 0% 66.6%, 11% 50%, 0% 33.3%, 11% 16.6%);
+  filter: drop-shadow(0 1px 1px rgba(90,74,52,.20));
+}
+/* 拍立得頭像:白框、厚下緣、微傾 */
+.phone.skin-memo .line-chat .av {
+  border-radius: 2px; border: 3px solid #fff; border-bottom: 9px solid #fff;
+  background: #fff; object-fit: cover; box-sizing: content-box;
+  box-shadow: 0 2px 5px rgba(120,100,70,.30); transform: rotate(-4deg);
+}
+.phone.skin-memo .statusbar, .phone.skin-memo .linehead { background: #efe4d4 !important; color: #5b4a34 !important; }
+.phone.skin-memo .inputbar { background: #efe4d4; color: #5b4a34; }
+.phone.skin-memo .homebar { background: #efe4d4; }
+.phone.skin-memo .homebar span { background: rgba(90,74,52,.55); }
+.phone.skin-memo .line-chat .appear { animation: memoIn .34s cubic-bezier(.22,1.2,.36,1) both; }
+@keyframes memoIn {
+  from { opacity: 0; transform: scale(.9) translateY(10px) rotate(2deg); }
+  to   { opacity: 1; transform: scale(1) translateY(0) rotate(0); }
+}
+
+/* ===== skin: Jelly 果凍軟糖 ===== */
+.phone.skin-jelly { --tilt-range: 2; }
+.phone.skin-jelly .screen, .phone.skin-jelly .line-chat { background: linear-gradient(160deg,#ffeaf4,#eaf3ff); }
+.phone.skin-jelly .line-chat .who { color:#c0417f; }
+.phone.skin-jelly .line-chat .time, .phone.skin-jelly .line-chat .read { color:#b06a92; }
+.phone.skin-jelly .line-chat .date > *, .phone.skin-jelly .line-chat .skip > * { background: rgba(200,90,150,.55); color:#fff; }
+.phone.skin-jelly .line-chat .msg .bubble {
+  border-radius: 22px; border: none; color:#7a2f52;
+  background: linear-gradient(#fff0f7,#ffdcec);
+  box-shadow: inset 0 3px 6px rgba(255,255,255,.9), inset 0 -5px 9px rgba(220,120,170,.28), 0 6px 14px rgba(210,130,175,.30);
+}
+.phone.skin-jelly .line-chat .msg.me .bubble {
+  color:#1f5b3c; background: linear-gradient(#dcffe9,#b6f0c9);
+  box-shadow: inset 0 3px 6px rgba(255,255,255,.9), inset 0 -5px 9px rgba(90,190,140,.28), 0 6px 14px rgba(120,200,150,.30);
+}
+/* 光澤糖果貼紙頭像:圓角方、白框、糖果陰影+內反光、微傾 */
+.phone.skin-jelly .line-chat .av { border-radius: 42%; border: 3px solid #fff; box-shadow: 0 3px 8px rgba(210,120,175,.5), inset 0 2px 5px rgba(255,255,255,.95); transform: rotate(-3deg); }
+.phone.skin-jelly .statusbar, .phone.skin-jelly .linehead { background:#ffd6ea !important; color:#8a3a63 !important; }
+.phone.skin-jelly .inputbar { background:#ffd6ea; color:#8a3a63; }
+.phone.skin-jelly .homebar { background:#ffd6ea; }
+.phone.skin-jelly .homebar span { background: rgba(140,58,99,.5); }
+.phone.skin-jelly .line-chat .appear { animation: jellyIn .42s cubic-bezier(.18,1.5,.3,1) both; }
+@keyframes jellyIn { 0%{opacity:0;transform:scale(.5)} 55%{opacity:1;transform:scale(1.12)} 75%{transform:scale(.96)} 100%{transform:scale(1)} }
+
+/* ===== skin: Doodle 手繪塗鴉 ===== */
+.phone.skin-doodle { --tilt-range: 3; }
+.phone.skin-doodle .screen, .phone.skin-doodle .line-chat {
+  background:#fffef8; background-image: repeating-linear-gradient(#fffef8 0 26px, #e7ecdd 26px 27px);
+}
+.phone.skin-doodle .line-chat .who { color:#c0562a; font-weight:700; }
+.phone.skin-doodle .line-chat .time, .phone.skin-doodle .line-chat .read { color:#8a8a76; }
+.phone.skin-doodle .line-chat .date > *, .phone.skin-doodle .line-chat .skip > * { background: rgba(58,58,58,.14); color:#4a4a42; }
+.phone.skin-doodle .line-chat .msg .bubble {
+  background:#fff; color:#333; border:2.5px solid #3a3a3a;
+  border-radius: 235px 18px 220px 18px / 18px 210px 18px 235px;
+  box-shadow: 2px 3px 0 rgba(0,0,0,.13);
+}
+.phone.skin-doodle .line-chat .msg.me .bubble { background:#fff6c8; }
+/* 手繪抖動墨框頭像:不規則圓、粗墨線、漫畫小陰影、微傾 */
+.phone.skin-doodle .line-chat .av { border:2.5px solid #3a3a3a !important; border-radius: 47% 53% 51% 49% / 52% 47% 53% 48% !important; box-shadow: 1.5px 2px 0 rgba(0,0,0,.16); transform: rotate(-3deg); }
+.phone.skin-doodle .statusbar, .phone.skin-doodle .linehead { background:#fffef8 !important; color:#3a3a3a !important; }
+.phone.skin-doodle .linehead { border-bottom:2.5px solid #3a3a3a; }
+.phone.skin-doodle .inputbar { background:#fffef8; color:#3a3a3a; border-top:2.5px solid #3a3a3a; }
+.phone.skin-doodle .homebar { background:#fffef8; }
+.phone.skin-doodle .homebar span { background:#3a3a3a; }
+.phone.skin-doodle .line-chat .appear { animation: doodleIn .32s ease-out both; }
+@keyframes doodleIn { from{opacity:0;transform:scale(.85) rotate(-3deg)} to{opacity:1;transform:scale(1) rotate(0)} }
+
+/* ===== skin: Pop 波普霓虹(暗底) ===== */
+.phone.skin-pop { --tilt-range: 3; }
+.phone.skin-pop .screen, .phone.skin-pop .line-chat { background:#12101c; }
+.phone.skin-pop .line-chat .who { color:#22e0c4; font-weight:700; }
+.phone.skin-pop .line-chat .time, .phone.skin-pop .line-chat .read { color:#9a9ab4; }
+.phone.skin-pop .line-chat .date > *, .phone.skin-pop .line-chat .skip > * { background: rgba(255,79,216,.20); color:#f4f2ff; }
+.phone.skin-pop .line-chat .msg .bubble {
+  background: rgba(255,255,255,.06); color:#f4f2ff;
+  border:2px solid #ff4fd8; border-radius:16px;
+  box-shadow: 0 0 12px rgba(255,79,216,.55), inset 0 0 8px rgba(255,79,216,.22);
+}
+.phone.skin-pop .line-chat .msg.me .bubble {
+  border-color:#00e5c0; color:#eafffb;
+  box-shadow: 0 0 12px rgba(0,229,192,.55), inset 0 0 8px rgba(0,229,192,.22);
+}
+/* 霓虹雙圈頭像:青內框 + 洋紅外圈 + 發光、圓角方、微傾 */
+.phone.skin-pop .line-chat .av { border:2px solid #00e5c0 !important; border-radius: 32%; box-shadow: 0 0 10px rgba(0,229,192,.85), 0 0 0 3px rgba(255,79,216,.55); transform: rotate(-2deg); }
+.phone.skin-pop .statusbar, .phone.skin-pop .linehead { background:#0c0a14 !important; color:#f4f2ff !important; }
+.phone.skin-pop .inputbar { background:#0c0a14; color:#cfc9e6; }
+.phone.skin-pop .homebar { background:#0c0a14; }
+.phone.skin-pop .homebar span { background: rgba(255,255,255,.85); }
+.phone.skin-pop .line-chat .appear { animation: popIn .36s ease-out both; }
+@keyframes popIn { 0%{opacity:0;transform:scale(.7);box-shadow:0 0 26px rgba(255,79,216,.9)} 100%{opacity:1;transform:scale(1)} }
+
+/* ===== skin 細節收尾:引用文字對比 + Pop 暗底元件 + 造型挖孔 ===== */
+/* 引用/回覆文字(.q)在各 skin 泡泡上要讀得到(baseline 深底淺字,亮泡/Pop 暗泡都會出問題) */
+.phone.skin-memo .line-chat .q { color:#7a6a52; }
+.phone.skin-jelly .line-chat .q { color:#a85684; }
+.phone.skin-doodle .line-chat .q { color:#5a5a4c; }
+.phone.skin-pop .line-chat .q { color:#cbc7e0; }
+.phone.skin-pop .line-chat .msg.me .q { color:#cbc7e0; } /* 蓋過 theme-dark 的 .msg.me .q(6 類,同分靠順序):暗底下 me 引用不落回深綠 */
+/* Pop 暗底:假輸入框與 AI 懸浮鈕不能留 baseline 亮色 */
+.phone.skin-pop .inputbar .fakein { background: rgba(255,255,255,.09); color:#d5d5e2; }
+.phone.skin-pop .ai-fab { background: rgba(255,255,255,.08); color:#eafffb; border:1px solid rgba(0,229,192,.55); }
+/* Pop 霓虹感:狀態列/表頭圖示與標題加微光暈 */
+.phone.skin-pop .statusbar .sicons svg, .phone.skin-pop .linehead .hicons svg { filter: drop-shadow(0 0 2.5px rgba(0,229,192,.65)); }
+.phone.skin-pop .linehead .htitle { text-shadow: 0 0 6px rgba(0,229,192,.35); }
+/* 造型挖孔:鏡頭挖孔形狀隨 skin(亮 skin 用黑洞;Pop 暗底改霓虹發光六角,否則黑洞在暗底看不見) */
+.phone .notch.skinhole { top: 11px; width: 24px; height: 24px; background:#0a0a0c; border-radius:0; clip-path: circle(45%); }
+.phone.skin-memo .notch.skinhole { clip-path: polygon(50% 2%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+.phone.skin-jelly .notch.skinhole { clip-path: path('M12 22 C 4 15.5, 1 11.5, 1 7.2 C 1 4, 3.4 2, 6 2 C 8.6 2, 10.8 3.8, 12 6.2 C 13.2 3.8, 15.4 2, 18 2 C 20.6 2, 23 4, 23 7.2 C 23 11.5, 20 15.5, 12 22 Z'); }
+.phone.skin-doodle .notch.skinhole { clip-path: polygon(50% 0%, 58% 42%, 100% 50%, 58% 58%, 50% 100%, 42% 58%, 0% 50%, 42% 42%); }
+.phone.skin-pop .notch.skinhole { background: #00e5c0; clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); filter: drop-shadow(0 0 3px #00e5c0) drop-shadow(0 0 6px rgba(0,229,192,.85)) drop-shadow(0 0 5px rgba(255,79,216,.6)); }
+.phone.skin-pop .notch.skinhole::before { content:''; position:absolute; inset:2.5px; background:#12101c; clip-path: polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%); } /* 暗心 → 霓虹管外框(不是實心色塊) */
+
+/* ===== skin: Ink 宣紙水墨(淺底·文人書法) ===== */
+/* 白紙 · 墨 · 朱印:筆觸暈開的墨箋泡泡、遠山墨雲霧底、紅毛筆點評圈鏡頭。SVG #ink-edge 濾鏡在 index.html #phone-wrap 內(供匯出) */
+.phone.skin-ink { --tilt-range: 1.4; font-family: 'Kaiti TC','Kaiti','STKaiti','BiauKai','DFKai-SB','KaiTi','TW-Kai','Noto Serif TC',serif; }
+/* 灰階水墨:白紙→灰→墨的濃淡,唯一色彩是頭像朱印(依 yazelin:減黃、增白灰黑) */
+.phone.skin-ink .screen, .phone.skin-ink .line-chat {
+  background-color: #f4f4f2;
+  background-image:
+    radial-gradient(165% 70% at 20% 132%, rgba(22,23,26,.5), rgba(58,60,64,.13) 44%, transparent 68%),
+    radial-gradient(130% 54% at 96% 128%, rgba(34,36,40,.32), transparent 56%),
+    radial-gradient(112% 48% at 110% 2%, rgba(44,46,50,.14), transparent 52%),
+    url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'120'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.85'%20numOctaves%3D'2'%20stitchTiles%3D'stitch'%2F%3E%3CfeColorMatrix%20type%3D'saturate'%20values%3D'0'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%20opacity%3D'0.06'%2F%3E%3C%2Fsvg%3E");
+  background-size: auto, auto, auto, 150px 150px; background-repeat: no-repeat, no-repeat, no-repeat, repeat; background-blend-mode: multiply, multiply, multiply, multiply;
+}
+.phone.skin-ink .line-chat .who { color: #454547; letter-spacing: .03em; }
+.phone.skin-ink .line-chat .time, .phone.skin-ink .line-chat .read { color: #8b8b8d; }
+.phone.skin-ink .line-chat .date > *, .phone.skin-ink .line-chat .skip > * { background: rgba(38,39,42,.62); color: #f2f2f0; letter-spacing: .05em; }
+.phone.skin-ink .line-chat .msg .bubble { position: relative; background: transparent; border: none; color: #1a1a1b; }
+/* 墨雲泡泡:徑向漸層中心夠實供文字、往外羽化為霧;有機雲形。灰階濃淡=對方淡墨(近白)、自己中墨(較深灰) */
+.phone.skin-ink .line-chat .msg .bubble::before { content: ''; position: absolute; inset: -6px; z-index: 0; background: radial-gradient(115% 130% at 50% 45%, #fcfcfb 56%, rgba(252,252,251,.5) 80%, rgba(252,252,251,0) 100%); border: none; box-shadow: none; border-radius: 47% 53% 52% 48% / 56% 49% 51% 44%; }
+.phone.skin-ink .line-chat .msg.me .bubble::before { background: radial-gradient(118% 134% at 48% 40%, #c6c6c4 46%, #acaca9 70%, rgba(150,150,148,.4) 88%, rgba(150,150,148,0) 100%); border-radius: 54% 46% 49% 51% / 49% 56% 44% 51%; }
+.phone.skin-ink .line-chat .msg .bubble > * { position: relative; z-index: 1; } /* 全部泡泡內容(含引用 .q 與其小頭像)都要在墨雲 ::before 之上,否則被雲遮住 */
+.phone.skin-ink .line-chat .q { color: #565658; border-bottom-color: rgba(40,40,42,.22); }
+.phone.skin-ink .line-chat .msg.me .q { color: #3f3f41; border-bottom-color: rgba(40,40,42,.26); }
+/* (移除泡泡右下角小朱印:11px 下讀成方塊、易混淆;朱色由頭像印框承擔) */
+.phone.skin-ink .line-chat .av { position: relative; z-index: 2; border-radius: 3px !important; border: 2px solid #b34a3e !important; box-shadow: 0 0 0 2px rgba(168,50,42,.35), 2px 3px 6px rgba(90,40,25,.2); transform: rotate(-2deg); }
+.phone.skin-ink .statusbar, .phone.skin-ink .linehead { background: #e8e8e6 !important; color: #343436 !important; }
+.phone.skin-ink .linehead { border-bottom: 1px solid rgba(40,40,42,.25); }
+.phone.skin-ink .inputbar { background: #e8e8e6; color: #454547; border-top: 1px solid rgba(40,40,42,.2); }
+.phone.skin-ink .inputbar .fakein { background: #f1f1ef; color: #454547; }
+.phone.skin-ink .homebar { background: #e8e8e6; } .phone.skin-ink .homebar span { background: rgba(50,50,52,.6); }
+.phone.skin-ink .ai-fab { background: #e9e9e7; color: #4a4a4c; border-color: rgba(60,60,62,.6); }
+.phone.skin-ink .line-chat .appear { animation: inkIn .48s cubic-bezier(.22,.9,.3,1) both; }
+@keyframes inkIn { 0%{opacity:0;transform:scale(.96) translateY(5px);filter:blur(2.5px)} 60%{opacity:1;filter:blur(.8px)} 100%{opacity:1;transform:none;filter:blur(0)} }
+/* 造型挖孔:朱紅毛筆點評圈(乾淨紅圈,不用濾鏡以免糊掉) */
+.phone.skin-ink .notch.skinhole { background: transparent; border: 3px solid #bb3b2b; border-radius: 50%; clip-path: none; box-shadow: 0 0 0 1px rgba(187,59,43,.15); top: 9px; width: 22px; height: 22px; }
