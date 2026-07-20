@@ -95,21 +95,39 @@ function toast(msg) {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3200);
 }
 
-async function seedPresets() { // 首次啟動:把內建範例(每款 skin 一份)種成草稿,新使用者一開「草稿」分頁就看得到
+async function fetchPresets() { // 讀內建範例清單(presets.json,precache);失敗回 null
   try {
     const res = await fetch('./presets.json');
-    if (!res.ok) return false;
+    if (!res.ok) return null;
     const presets = await res.json();
-    if (!Array.isArray(presets) || !presets.length) return false;
-    let first = null;
-    for (let i = presets.length - 1; i >= 0; i--) { // 反序種:陣列首項最後種→updatedAt 最新→列在草稿最上、也是啟用那份
-      const p = presets[i];
-      const d = await createDraft(migrate(p.state), p.name || (p.state.settings && p.state.settings.title));
-      if (i === 0) first = d;
-    }
-    if (first) { activate(first); return true; }
-    return false;
-  } catch (e) { console.warn('內建範例載入失敗', e); return false; }
+    return Array.isArray(presets) && presets.length ? presets : null;
+  } catch (e) { console.warn('內建範例載入失敗', e); return null; }
+}
+async function seedPresets() { // 首次啟動:把內建範例種成草稿,新使用者一開「草稿」分頁就看得到
+  const presets = await fetchPresets();
+  if (!presets) return false;
+  let first = null;
+  for (let i = presets.length - 1; i >= 0; i--) { // 反序種:陣列首項最後種→updatedAt 最新→列在草稿最上、也是啟用那份
+    const p = presets[i];
+    const d = await createDraft(migrate(p.state), p.name || (p.state.settings && p.state.settings.title));
+    if (i === 0) first = d;
+  }
+  if (first) { activate(first); return true; }
+  return false;
+}
+// 老使用者(草稿庫非空)手動載入內建範例:只補草稿裡還沒有的(按 name 去重),不動現有創作
+async function loadPresetsToDrafts() {
+  const presets = await fetchPresets();
+  if (!presets) { toast('內建範例載入失敗'); return; }
+  const existing = (idbDead ? [] : await draftAll().catch(() => [])).map((d) => d.name);
+  const missing = window.LCM_PURE.presetsToLoad(presets, existing);
+  if (!missing.length) { toast('內建範例已在你的草稿裡了'); return; }
+  for (let i = missing.length - 1; i >= 0; i--) {
+    const p = missing[i];
+    await createDraft(migrate(p.state), p.name || (p.state.settings && p.state.settings.title));
+  }
+  renderDrafts();
+  toast('已載入 ' + missing.length + ' 份內建範例到草稿');
 }
 
 async function boot() {
@@ -1001,6 +1019,7 @@ $('#draft-new').addEventListener('click', async () => {
   activate(await createDraft(blank, '新對話'));
   render(); renderDrafts();
 });
+$('#load-presets').addEventListener('click', loadPresetsToDrafts);
 document.querySelector('.tabs [data-pane="drafts"]').addEventListener('click', renderDrafts);
 
 // ── 腳本 JSON 進出 ──
