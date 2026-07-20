@@ -95,6 +95,23 @@ function toast(msg) {
   setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3200);
 }
 
+async function seedPresets() { // 首次啟動:把內建範例(每款 skin 一份)種成草稿,新使用者一開「草稿」分頁就看得到
+  try {
+    const res = await fetch('./presets.json');
+    if (!res.ok) return false;
+    const presets = await res.json();
+    if (!Array.isArray(presets) || !presets.length) return false;
+    let first = null;
+    for (let i = presets.length - 1; i >= 0; i--) { // 反序種:陣列首項最後種→updatedAt 最新→列在草稿最上、也是啟用那份
+      const p = presets[i];
+      const d = await createDraft(migrate(p.state), p.name || (p.state.settings && p.state.settings.title));
+      if (i === 0) first = d;
+    }
+    if (first) { activate(first); return true; }
+    return false;
+  } catch (e) { console.warn('內建範例載入失敗', e); return false; }
+}
+
 async function boot() {
   try { await idbOpen(); } catch (e) { idbDead = true; console.warn('IndexedDB 不可用,本次僅記憶體運作,請匯出 JSON 備份', e); }
   try { // 收件匣:AI/Playwright 注入 + 舊版一次性遷移,同一條規則
@@ -113,7 +130,7 @@ async function boot() {
     const all = idbDead ? [] : await draftAll().catch(() => []);
     const d = all.find((x) => x.id === localStorage.getItem('lcm-current')) || all.sort((a, b) => b.updatedAt - a.updatedAt)[0];
     if (d) activate(d);
-    else activate(await createDraft(migrate(JSON.parse(JSON.stringify(DEMO))), '範例'));
+    else if (!(await seedPresets())) activate(await createDraft(migrate(JSON.parse(JSON.stringify(DEMO))), '範例'));
   }
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   render();
