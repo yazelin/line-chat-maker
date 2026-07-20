@@ -266,8 +266,13 @@ function render() {
   $('#chat-title').textContent = st.title;
   $('#chat-members').textContent = !dm && st.members > 0 ? `(${(+st.members).toLocaleString('en-US')})` : ''; // LINE 千分位
   $('#chat-members').style.display = !dm && st.members > 0 ? '' : 'none';
-  chatEl.style.background = st.bg;
-  chatEl.style.backgroundImage = st.bgImage ? `url(${st.bgImage})` : '';
+  if (eff === 'real') {
+    chatEl.style.background = st.bg;
+    chatEl.style.backgroundImage = st.bgImage ? `url(${st.bgImage})` : '';
+  } else { // 玩樂 skin:清掉 inline 背景色/圖,讓 .phone.skin-* .line-chat 的 CSS 生效
+    chatEl.style.background = '';
+    chatEl.style.backgroundImage = '';
+  }
   chatEl.style.backgroundSize = 'cover';
   chatEl.style.backgroundPosition = 'center';
 
