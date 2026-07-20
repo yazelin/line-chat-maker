@@ -323,3 +323,66 @@ body.dark .ai-quota { background: #1f2126; border-color: #33363c; color: #9aa0a8
   from { opacity: 0; transform: scale(.9) translateY(10px) rotate(2deg); }
   to   { opacity: 1; transform: scale(1) translateY(0) rotate(0); }
 }
+
+/* ===== skin: Jelly 果凍軟糖 ===== */
+.phone.skin-jelly { --tilt-range: 2; }
+.phone.skin-jelly .screen, .phone.skin-jelly .line-chat { background: linear-gradient(160deg,#ffeaf4,#eaf3ff); }
+.phone.skin-jelly .line-chat .who { color:#c0417f; }
+.phone.skin-jelly .line-chat .time, .phone.skin-jelly .line-chat .read { color:#b06a92; }
+.phone.skin-jelly .line-chat .date > *, .phone.skin-jelly .line-chat .skip > * { background: rgba(200,90,150,.55); color:#fff; }
+.phone.skin-jelly .line-chat .msg .bubble {
+  border-radius: 22px; border: none; color:#7a2f52;
+  background: linear-gradient(#fff0f7,#ffdcec);
+  box-shadow: inset 0 3px 6px rgba(255,255,255,.9), inset 0 -5px 9px rgba(220,120,170,.28), 0 6px 14px rgba(210,130,175,.30);
+}
+.phone.skin-jelly .line-chat .msg.me .bubble {
+  color:#1f5b3c; background: linear-gradient(#dcffe9,#b6f0c9);
+  box-shadow: inset 0 3px 6px rgba(255,255,255,.9), inset 0 -5px 9px rgba(90,190,140,.28), 0 6px 14px rgba(120,200,150,.30);
+}
+.phone.skin-jelly .line-chat .av { border:2px solid #fff; box-shadow: 0 2px 5px rgba(210,130,175,.45); }
+.phone.skin-jelly .statusbar, .phone.skin-jelly .linehead { background:#ffd6ea !important; color:#8a3a63 !important; }
+.phone.skin-jelly .inputbar { background:#ffd6ea; color:#8a3a63; }
+.phone.skin-jelly .line-chat .appear { animation: jellyIn .42s cubic-bezier(.18,1.5,.3,1) both; }
+@keyframes jellyIn { 0%{opacity:0;transform:scale(.5)} 55%{opacity:1;transform:scale(1.12)} 75%{transform:scale(.96)} 100%{transform:scale(1)} }
+
+/* ===== skin: Doodle 手繪塗鴉 ===== */
+.phone.skin-doodle { --tilt-range: 3; }
+.phone.skin-doodle .screen, .phone.skin-doodle .line-chat {
+  background:#fffef8; background-image: repeating-linear-gradient(#fffef8 0 26px, #e7ecdd 26px 27px);
+}
+.phone.skin-doodle .line-chat .who { color:#c0562a; font-weight:700; }
+.phone.skin-doodle .line-chat .time, .phone.skin-doodle .line-chat .read { color:#8a8a76; }
+.phone.skin-doodle .line-chat .date > *, .phone.skin-doodle .line-chat .skip > * { background: rgba(58,58,58,.14); color:#4a4a42; }
+.phone.skin-doodle .line-chat .msg .bubble {
+  background:#fff; color:#333; border:2.5px solid #3a3a3a;
+  border-radius: 235px 18px 220px 18px / 18px 210px 18px 235px;
+  box-shadow: 2px 3px 0 rgba(0,0,0,.13);
+}
+.phone.skin-doodle .line-chat .msg.me .bubble { background:#fff6c8; }
+.phone.skin-doodle .line-chat .av { border:2.5px solid #3a3a3a !important; box-shadow:none; }
+.phone.skin-doodle .statusbar, .phone.skin-doodle .linehead { background:#fffef8 !important; color:#3a3a3a !important; }
+.phone.skin-doodle .linehead { border-bottom:2.5px solid #3a3a3a; }
+.phone.skin-doodle .inputbar { background:#fffef8; color:#3a3a3a; border-top:2.5px solid #3a3a3a; }
+.phone.skin-doodle .line-chat .appear { animation: doodleIn .32s ease-out both; }
+@keyframes doodleIn { from{opacity:0;transform:scale(.85) rotate(-3deg)} to{opacity:1;transform:scale(1) rotate(0)} }
+
+/* ===== skin: Pop 波普霓虹(暗底) ===== */
+.phone.skin-pop { --tilt-range: 3; }
+.phone.skin-pop .screen, .phone.skin-pop .line-chat { background:#12101c; }
+.phone.skin-pop .line-chat .who { color:#22e0c4; font-weight:700; }
+.phone.skin-pop .line-chat .time, .phone.skin-pop .line-chat .read { color:#9a9ab4; }
+.phone.skin-pop .line-chat .date > *, .phone.skin-pop .line-chat .skip > * { background: rgba(255,79,216,.20); color:#f4f2ff; }
+.phone.skin-pop .line-chat .msg .bubble {
+  background: rgba(255,255,255,.06); color:#f4f2ff;
+  border:2px solid #ff4fd8; border-radius:16px;
+  box-shadow: 0 0 12px rgba(255,79,216,.55), inset 0 0 8px rgba(255,79,216,.22);
+}
+.phone.skin-pop .line-chat .msg.me .bubble {
+  border-color:#00e5c0; color:#eafffb;
+  box-shadow: 0 0 12px rgba(0,229,192,.55), inset 0 0 8px rgba(0,229,192,.22);
+}
+.phone.skin-pop .line-chat .av { border:2px solid #ff4fd8 !important; box-shadow:0 0 8px rgba(255,79,216,.6); }
+.phone.skin-pop .statusbar, .phone.skin-pop .linehead { background:#0c0a14 !important; color:#f4f2ff !important; }
+.phone.skin-pop .inputbar { background:#0c0a14; color:#cfc9e6; }
+.phone.skin-pop .line-chat .appear { animation: popIn .36s ease-out both; }
+@keyframes popIn { 0%{opacity:0;transform:scale(.7);box-shadow:0 0 26px rgba(255,79,216,.9)} 100%{opacity:1;transform:scale(1)} }
