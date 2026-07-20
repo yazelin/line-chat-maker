@@ -6,6 +6,7 @@
     { id: 'jelly', label: '果凍軟糖' },
     { id: 'doodle', label: '手繪塗鴉' },
     { id: 'pop', label: '波普霓虹' },
+    { id: 'ink', label: '宣紙水墨' },
     { id: 'real', label: '真實(本機)', hidden: true },
   ];
   const SKIN_IDS = new Set(SKINS.map((s) => s.id));
