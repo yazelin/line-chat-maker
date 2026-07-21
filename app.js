@@ -806,7 +806,12 @@ $('#export-mp4').addEventListener('click', async () => {
     const W = Math.floor(rawW * scale / 2) * 2, H = Math.floor(rawH * scale / 2) * 2;
     // 時序表(與播放一致):開場停 0.8s → 每則 0.65s → 停 0.7s → 草稿 75ms/字 → 收尾 1.5s
     // 訊息步只回報「要捲多少」,實際捲動交給幀迴圈內插成平滑動畫
-    const steps = [{ hold: 800, apply() { nodes.forEach((n) => { n.style.visibility = 'hidden'; n.classList.remove('appear'); }); if (draftText) draftEl.textContent = ''; chatEl.scrollTop = 0; } }];
+    const steps = [
+      // 封面(= MP4 第一幀/縮圖):完整對話已載入、捲到最上,看得到開頭;供分享時當預覽圖
+      { hold: 900, apply() { nodes.forEach((n) => { n.style.visibility = ''; n.classList.remove('appear'); n.style.opacity = ''; n.style.transform = ''; }); if (draftText) draftEl.textContent = ''; chatEl.scrollTop = 0; } },
+      // 清空,準備逐則重演
+      { hold: 250, apply() { nodes.forEach((n) => { n.style.visibility = 'hidden'; n.classList.remove('appear'); }); chatEl.scrollTop = 0; } },
+    ];
     nodes.forEach((n) => steps.push({ hold: 650, bubble: n, apply() {
       n.style.visibility = '';
       const nb = n.getBoundingClientRect(), cb = chatEl.getBoundingClientRect();
