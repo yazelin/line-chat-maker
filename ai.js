@@ -402,10 +402,11 @@ async function refreshQuota() {
     const q = await r.json();
     const parts = [];
     if (cfg().provider === 'free') parts.push(`AI ${Math.max(0, q.ipLimit - q.ipUsed)}/${q.ipLimit}`);
+    if (cfg().provider === 'free' && typeof q.glmLimit === 'number') parts.push(`編劇 ${Math.max(0, q.glmLimit - q.glmUsed)}/${q.glmLimit}`);
     if (imgCfg().provider === 'free' && typeof q.imgLimit === 'number') parts.push(`圖 ${Math.max(0, q.imgLimit - q.imgUsed)}/${q.imgLimit}`);
     if (!parts.length) { badge.hidden = true; return; }
     badge.textContent = '今日剩:' + parts.join('・');
-    badge.title = `免費額度每天重置(文字約 20 次=1 個作品;補圖 1 次=一整批圖)。全站今日:文字剩 ${Math.max(0, q.globalLimit - q.globalUsed)}/${q.globalLimit}、補圖剩 ${Math.max(0, (q.imgGlobalLimit || 0) - (q.imgGlobalUsed || 0))}/${q.imgGlobalLimit || 0}。自帶 key 不受這些限制。`;
+    badge.title = `免費額度每天重置(編劇=GLM,每天約 20 次、每次「劇本強化」用 1~3 次;AI=製作/微調/評審共用的文字額度;補圖 1 次=一整批圖)。全站今日:文字剩 ${Math.max(0, q.globalLimit - q.globalUsed)}/${q.globalLimit}、編劇剩 ${Math.max(0, (q.glmGlobalLimit || 0) - (q.glmGlobalUsed || 0))}/${q.glmGlobalLimit || 0}、補圖剩 ${Math.max(0, (q.imgGlobalLimit || 0) - (q.imgGlobalUsed || 0))}/${q.imgGlobalLimit || 0}。自帶 key 不受這些限制。`;
     badge.hidden = false;
   } catch (e) { badge.hidden = true; }
 }
