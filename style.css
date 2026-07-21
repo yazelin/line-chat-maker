@@ -222,21 +222,21 @@ body.previewing .radd { display: none !important; }
 .phone .linehead .htitle { font-weight: 700; }
 
 /* ── LINE 深色主題(作品本身,雙 os 通用) ── */
-.phone.theme-dark .statusbar, .phone.theme-dark .linehead { background: #0f1216; color: #fff; }
-.phone.theme-dark .inputbar { background: #0f1216; color: #cfd3d8; }
-.phone.theme-dark .inputbar .plus { color: #cfd3d8; }
-.phone.theme-dark .inputbar .fakein { background: #22262b; color: #d5d9de; }
-.phone.theme-dark .inputbar .fakein:empty::before { color: #7d838a; }
-.phone.theme-dark .homebar { background: #0f1216; }
-.phone.theme-dark .homebar span { background: rgba(255, 255, 255, 0.85); }
-.phone.theme-dark .line-chat .msg .bubble { background: #2b2d31; color: #e8eaed; }
-.phone.theme-dark .line-chat .msg.me .bubble { background: #7fe15a; color: #101710; }
-.phone.theme-dark .line-chat .q { color: #b9bdc2; border-bottom-color: rgba(255, 255, 255, 0.18); }
-.phone.theme-dark .line-chat .msg.me .q { color: #2c4423; border-bottom-color: rgba(0, 0, 0, 0.2); }
-.phone.theme-dark .line-chat .file .fsize { color: #9aa0a6; }
-.phone.theme-dark .line-chat .voice .vbars i { background: #9aa0a6; }
-.phone.theme-dark .announce { background: rgba(18, 20, 24, 0.82); color: #c9ced4; border-bottom-color: rgba(255, 255, 255, 0.05); }
-.phone.theme-dark .announce .achev { color: #8a8f96; }
+.phone.skin-real.theme-dark .statusbar, .phone.skin-real.theme-dark .linehead { background: #0f1216; color: #fff; }
+.phone.skin-real.theme-dark .inputbar { background: #0f1216; color: #cfd3d8; }
+.phone.skin-real.theme-dark .inputbar .plus { color: #cfd3d8; }
+.phone.skin-real.theme-dark .inputbar .fakein { background: #22262b; color: #d5d9de; }
+.phone.skin-real.theme-dark .inputbar .fakein:empty::before { color: #7d838a; }
+.phone.skin-real.theme-dark .homebar { background: #0f1216; }
+.phone.skin-real.theme-dark .homebar span { background: rgba(255, 255, 255, 0.85); }
+.phone.skin-real.theme-dark .line-chat .msg .bubble { background: #2b2d31; color: #e8eaed; }
+.phone.skin-real.theme-dark .line-chat .msg.me .bubble { background: #7fe15a; color: #101710; }
+.phone.skin-real.theme-dark .line-chat .q { color: #b9bdc2; border-bottom-color: rgba(255, 255, 255, 0.18); }
+.phone.skin-real.theme-dark .line-chat .msg.me .q { color: #2c4423; border-bottom-color: rgba(0, 0, 0, 0.2); }
+.phone.skin-real.theme-dark .line-chat .file .fsize { color: #9aa0a6; }
+.phone.skin-real.theme-dark .line-chat .voice .vbars i { background: #9aa0a6; }
+.phone.skin-real.theme-dark .announce { background: rgba(18, 20, 24, 0.82); color: #c9ced4; border-bottom-color: rgba(255, 255, 255, 0.05); }
+.phone.skin-real.theme-dark .announce .achev { color: #8a8f96; }
 
 /* ── AI 助手面板 ── */
 .panel label textarea { width: 100%; padding: 0.35rem 0.5rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; font-family: inherit; resize: vertical; }
