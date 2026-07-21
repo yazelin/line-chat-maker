@@ -6,8 +6,14 @@ compatibility_date = "2025-01-01"
 [vars]
 # 只服務這些 Origin(逗號分隔);自架請改成你的網域
 ALLOWED_ORIGINS = "https://yazelin.github.io"
-# 鎖定的 model(不接受前端指定其他 model)
+# 鎖定的 model(執行/工具呼叫;不接受前端指定其他 model)
 MODEL = "openai/gpt-oss-120b"
+# 編劇模型:免費體驗的「劇本強化」送這個 model 名,worker 路由到 llm-share(朋友的 GLM);其餘一律走上面的 Groq
+WRITER_MODEL = "glm-5.2"
+LLMSHARE_BASE = "https://llm-share.duotify.com/v1"
+# 編劇(GLM)獨立且更緊的每日額度,保護朋友的 key(Origin 可偽造,不能只靠共用的 GLOBAL_DAILY)。依朋友 key 容量調整。
+GLM_IP_DAILY = "20"
+GLM_GLOBAL_DAILY = "200"
 # 每 IP 每日 AI 呼叫上限(約 20 次=1 個完整作品)
 IP_DAILY = "60"
 # 全站每日熔斷:成本天花板 = GLOBAL_DAILY x 單次呼叫成本(粗估每日上限 1200 次 ≈ US$1.2)
@@ -25,3 +31,5 @@ database_id = "843337b7-ef58-4e6a-8e12-759e5d5b379c"
 
 # GROQ_API_KEY 走 secret,不放這裡:
 #   cd worker && npx wrangler secret put GROQ_API_KEY
+# LLMSHARE_API_KEY 走 secret(朋友的 GLM 虛擬 key,絕不放這裡/前端;沒設時編劇自動退回 Groq):
+#   cd worker && npx wrangler secret put LLMSHARE_API_KEY

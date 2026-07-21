@@ -90,6 +90,9 @@ export default {
     try { body = JSON.parse(raw); } catch { return err(400, '請求不是合法 JSON。'); }
     if (!Array.isArray(body.messages) || !body.messages.length || body.messages.length > 150) return err(400, 'messages 格式不對。');
 
+    const writerModel = env.WRITER_MODEL || 'glm-5.2';
+    const wantWriter = body.model === writerModel && !!env.LLMSHARE_API_KEY; // 編劇=glm-5.2 路由到朋友的 llm-share
+
     // 額度:每 IP 每日+全站熔斷(D1;表不存在時自建一次)
     const day = new Date().toISOString().slice(0, 10); // UTC 日界,台北時間早上 8 點重置
     const ip = req.headers.get('CF-Connecting-IP') || 'unknown';
@@ -104,24 +107,45 @@ export default {
     if (counts.global > globalLimit) return err(429, '今天全站的免費體驗額度被大家用完了(亞澤的信用卡在冒煙)。明天再來,或到連線設定填自己的 Groq API Key(免費申請,額度歸你)。');
     if (counts.ip > ipLimit) return err(429, `你今天的免費體驗額度用完了(每天 ${ipLimit} 次 AI 呼叫,約 3 個作品)。想繼續:連線設定填自己的 Groq API Key(免費申請)。`);
 
-    // 鎖定 model 與欄位:這不是萬用 LLM 代理
-    const clean = {
-      model: env.MODEL || 'openai/gpt-oss-120b',
-      messages: body.messages,
-      max_tokens: Math.min(+body.max_tokens || 4096, 4096),
-    };
-    if (Array.isArray(body.tools)) clean.tools = body.tools;
-    if (body.tool_choice !== undefined) clean.tool_choice = body.tool_choice;
+    // 編劇(GLM)另有一道更小的獨立額度:保護朋友的 key(Origin 標頭可偽造,共用的全站 1200 不夠緊)
+    if (wantWriter) {
+      let gc;
+      try { gc = await bump(env.DB, day, 'glm:' + ip, '__glm_global__'); }
+      catch (e) {
+        await env.DB.exec('CREATE TABLE IF NOT EXISTS lcm_quota (day TEXT NOT NULL, ip TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, ip))');
+        gc = await bump(env.DB, day, 'glm:' + ip, '__glm_global__');
+      }
+      if (gc.global > (+env.GLM_GLOBAL_DAILY || 200)) return err(429, '今天全站的免費「劇本強化」額度用完了。明天再來,或連線設定填自己的 API Key,或用「複製 prompt」貼到你自己的 AI。');
+      if (gc.ip > (+env.GLM_IP_DAILY || 20)) return err(429, '你今天的免費「劇本強化」額度用完了。想繼續:連線設定填自己的 API Key,或用「複製 prompt(免費)」貼到你自己的 AI。');
+    }
 
-    const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
+    // 鎖定 model 與欄位:這不是萬用 LLM 代理。編劇(glm-5.2)路由到 llm-share;其餘一律鎖 Groq。secret 沒設時退回 Groq。
+    let clean, upURL, upHeaders;
+    if (wantWriter) {
+      clean = {
+        model: writerModel,
+        messages: body.messages,
+        max_tokens: Math.max(1, Math.min(+body.max_tokens || 8192, 8192)),
+        reasoning_effort: 'none', // GLM 是思考型:不關掉會把預算全花在 reasoning、content 回空白
+      };
+      upURL = (env.LLMSHARE_BASE || 'https://llm-share.duotify.com/v1').replace(/\/+$/, '') + '/chat/completions';
+      upHeaders = { 'content-type': 'application/json', authorization: 'Bearer ' + env.LLMSHARE_API_KEY, 'user-agent': 'lcm-ai-proxy/1.0' };
+    } else {
+      clean = {
+        model: env.MODEL || 'openai/gpt-oss-120b',
+        messages: body.messages,
+        max_tokens: Math.min(+body.max_tokens || 4096, 4096),
+      };
+      if (Array.isArray(body.tools)) clean.tools = body.tools;
+      if (body.tool_choice !== undefined) clean.tool_choice = body.tool_choice;
+      upURL = 'https://api.groq.com/openai/v1/chat/completions';
+      upHeaders = {
         'content-type': 'application/json',
         authorization: 'Bearer ' + env.GROQ_API_KEY,
         'user-agent': 'lcm-ai-proxy/1.0 (+https://github.com/yazelin/line-chat-maker)', // Groq 前的 CF 防護會擋無 UA 的雲端請求
-      },
-      body: JSON.stringify(clean),
-    });
+      };
+    }
+    const upstream = await fetch(upURL, { method: 'POST', headers: upHeaders, body: JSON.stringify(clean) });
     const text = await upstream.text();
     return new Response(text, { status: upstream.status, headers: { 'content-type': 'application/json', ...cors } });
   },
