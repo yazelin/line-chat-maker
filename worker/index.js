@@ -104,24 +104,35 @@ export default {
     if (counts.global > globalLimit) return err(429, '今天全站的免費體驗額度被大家用完了(亞澤的信用卡在冒煙)。明天再來,或到連線設定填自己的 Groq API Key(免費申請,額度歸你)。');
     if (counts.ip > ipLimit) return err(429, `你今天的免費體驗額度用完了(每天 ${ipLimit} 次 AI 呼叫,約 3 個作品)。想繼續:連線設定填自己的 Groq API Key(免費申請)。`);
 
-    // 鎖定 model 與欄位:這不是萬用 LLM 代理
-    const clean = {
-      model: env.MODEL || 'openai/gpt-oss-120b',
-      messages: body.messages,
-      max_tokens: Math.min(+body.max_tokens || 4096, 4096),
-    };
-    if (Array.isArray(body.tools)) clean.tools = body.tools;
-    if (body.tool_choice !== undefined) clean.tool_choice = body.tool_choice;
-
-    const upstream = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
+    // 鎖定 model 與欄位:這不是萬用 LLM 代理。
+    // 只有「編劇模型」(glm-5.2)路由到朋友的 llm-share;其餘一律鎖 Groq gpt-oss。secret 沒設時編劇自動退回 Groq。
+    const writerModel = env.WRITER_MODEL || 'glm-5.2';
+    let clean, upURL, upHeaders;
+    if (body.model === writerModel && env.LLMSHARE_API_KEY) {
+      clean = {
+        model: writerModel,
+        messages: body.messages,
+        max_tokens: Math.min(+body.max_tokens || 8192, 8192),
+        reasoning_effort: 'none', // GLM 是思考型:不關掉會把預算全花在 reasoning、content 回空白
+      };
+      upURL = (env.LLMSHARE_BASE || 'https://llm-share.duotify.com/v1').replace(/\/+$/, '') + '/chat/completions';
+      upHeaders = { 'content-type': 'application/json', authorization: 'Bearer ' + env.LLMSHARE_API_KEY, 'user-agent': 'lcm-ai-proxy/1.0' };
+    } else {
+      clean = {
+        model: env.MODEL || 'openai/gpt-oss-120b',
+        messages: body.messages,
+        max_tokens: Math.min(+body.max_tokens || 4096, 4096),
+      };
+      if (Array.isArray(body.tools)) clean.tools = body.tools;
+      if (body.tool_choice !== undefined) clean.tool_choice = body.tool_choice;
+      upURL = 'https://api.groq.com/openai/v1/chat/completions';
+      upHeaders = {
         'content-type': 'application/json',
         authorization: 'Bearer ' + env.GROQ_API_KEY,
         'user-agent': 'lcm-ai-proxy/1.0 (+https://github.com/yazelin/line-chat-maker)', // Groq 前的 CF 防護會擋無 UA 的雲端請求
-      },
-      body: JSON.stringify(clean),
-    });
+      };
+    }
+    const upstream = await fetch(upURL, { method: 'POST', headers: upHeaders, body: JSON.stringify(clean) });
     const text = await upstream.text();
     return new Response(text, { status: upstream.status, headers: { 'content-type': 'application/json', ...cors } });
   },
