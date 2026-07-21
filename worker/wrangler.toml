@@ -11,6 +11,9 @@ MODEL = "openai/gpt-oss-120b"
 # 編劇模型:免費體驗的「劇本強化」送這個 model 名,worker 路由到 llm-share(朋友的 GLM);其餘一律走上面的 Groq
 WRITER_MODEL = "glm-5.2"
 LLMSHARE_BASE = "https://llm-share.duotify.com/v1"
+# 編劇(GLM)獨立且更緊的每日額度,保護朋友的 key(Origin 可偽造,不能只靠共用的 GLOBAL_DAILY)。依朋友 key 容量調整。
+GLM_IP_DAILY = "20"
+GLM_GLOBAL_DAILY = "200"
 # 每 IP 每日 AI 呼叫上限(約 20 次=1 個完整作品)
 IP_DAILY = "60"
 # 全站每日熔斷:成本天花板 = GLOBAL_DAILY x 單次呼叫成本(粗估每日上限 1200 次 ≈ US$1.2)
