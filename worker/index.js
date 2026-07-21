@@ -19,19 +19,22 @@ export default {
       if (!okOrigin) return err(403, '這個免費代理只服務 line-chat-maker 網頁。');
       const day = new Date().toISOString().slice(0, 10);
       const ip = req.headers.get('CF-Connecting-IP') || 'unknown';
-      let mine = 0, all = 0, imgMine = 0, imgAll = 0;
+      let mine = 0, all = 0, imgMine = 0, imgAll = 0, glmMine = 0, glmAll = 0;
       try {
         const q = 'SELECT n FROM lcm_quota WHERE day = ?1 AND ip = ?2';
         const a = await env.DB.prepare(q).bind(day, ip).first();
         const b = await env.DB.prepare(q).bind(day, '__global__').first();
         const ci = await env.DB.prepare(q).bind(day, 'img:' + ip).first();
         const di = await env.DB.prepare(q).bind(day, '__img_global__').first();
-        mine = a ? a.n : 0; all = b ? b.n : 0; imgMine = ci ? ci.n : 0; imgAll = di ? di.n : 0;
+        const gi = await env.DB.prepare(q).bind(day, 'glm:' + ip).first();
+        const gj = await env.DB.prepare(q).bind(day, '__glm_global__').first();
+        mine = a ? a.n : 0; all = b ? b.n : 0; imgMine = ci ? ci.n : 0; imgAll = di ? di.n : 0; glmMine = gi ? gi.n : 0; glmAll = gj ? gj.n : 0;
       } catch (e) {} // 表還沒建=零用量
       return new Response(
         JSON.stringify({
           ipUsed: mine, ipLimit: +env.IP_DAILY || 60, globalUsed: all, globalLimit: +env.GLOBAL_DAILY || 1200,
           imgUsed: imgMine, imgLimit: +env.IMG_IP_DAILY || 2, imgGlobalUsed: imgAll, imgGlobalLimit: +env.IMG_GLOBAL_DAILY || 20,
+          glmUsed: glmMine, glmLimit: +env.GLM_IP_DAILY || 20, glmGlobalUsed: glmAll, glmGlobalLimit: +env.GLM_GLOBAL_DAILY || 200,
         }),
         { headers: { 'content-type': 'application/json', ...cors } },
       );
