@@ -25,8 +25,9 @@ const post = (p, b, t) => req(p, 'POST', b, t);
 const del = (p, t) => req(p, 'DELETE', null, t);
 const get = (p) => req(p, 'GET', null, null);
 
-const proc = spawn('npx', ['wrangler', 'dev', '--port', String(PORT), '--local'], { cwd: WORKER_DIR, stdio: 'ignore' });
-const stop = () => { try { proc.kill(); } catch (e) {} };
+// detached + 殺整個行程群組:wrangler 底下還有 workerd 孫行程,只 kill npx 會留下佔著埠不放的殭屍
+const proc = spawn('npx', ['wrangler', 'dev', '--port', String(PORT), '--local'], { cwd: WORKER_DIR, stdio: 'ignore', detached: true });
+const stop = () => { try { process.kill(-proc.pid); } catch (e) { try { proc.kill(); } catch (e2) {} } };
 process.on('exit', stop);
 
 let up = false;
