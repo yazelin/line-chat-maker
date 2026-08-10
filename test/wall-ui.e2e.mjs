@@ -57,7 +57,7 @@ const stash = new Map();
 const stub = async (page) => {
   await page.route('**/api/short-url', async (route) => {
     const body = JSON.parse(route.request().postData() || '{}');
-    const code = 'a1b2c3d4';
+    const code = 'Xk9-_aB2'; // 真實格式:base64url
     stash.set(code, body.state);
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ code, shortUrl: 'http://x/s/' + code }) });
   });
